@@ -1,2 +1,0 @@
-command: python data_validation.py
-description: Indicates successfull validation of submission

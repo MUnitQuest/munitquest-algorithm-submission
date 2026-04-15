@@ -27,19 +27,6 @@ pages:
     file: pages/organizers.md
 
 phases:
-# - index: 0
-#   name: 'Phase 0: Archive'
-#   description: >-
-#     Community members contribute datasets (i.e., experimental or simulated HDsEMG data
-#     together with labeled spike trains), which are automatically standardised to the
-#     EMG-BIDS format. Each submitted dataset is assessed via a double-blind review process
-#     (also serving as the basis for the awards in the Data challenge). All datasets entering
-#     Phase 2 will be released on an open data repository (for datasets not entering the
-#     competition's data collection, this remains optional).
-#   start: 06-01-2026
-#   end: 06-14-2026
-#   tasks:
-#   - 4
 - index: 0
   name: 'Phase 1: Familiarization'
   description: >-
@@ -99,12 +86,6 @@ tasks:
   # input_data: input_data/dynamic/showdown/
   # reference_data: reference_data/dynamic/showdown/
   scoring_program: scoring/dynamic/
-# - index: 4
-#   name: Dataset validation task
-#   description: 'Submitted metadata is evaluated against the BIDS specification for EMG data.
-#     Upon successful validation, an email will be sent to the submitter containing an upload link to some cloud bucket'
-#   is_public: false
-#   scoring_program: scoring/data_challenge/
 
 leaderboards:
 - index: 0
