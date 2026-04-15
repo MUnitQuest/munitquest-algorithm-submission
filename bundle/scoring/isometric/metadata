@@ -1,0 +1,2 @@
+command: python scoring.py
+description: Indicates successful scoring of submission

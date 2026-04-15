@@ -1,0 +1,130 @@
+# The Yaml file contains the main parameters describing the challenge.
+# You can learn more about the possible settings here:
+# https://docs.codabench.org/latest/Organizers/Benchmark_Creation/Yaml-Structure/
+
+# Meta settings
+version: 2
+title: MUnitQuest - Algorithmic Challenge
+description: >-
+  Submission platform for the algorithmic challenges in the context of https://munitquest.github.io/.
+  The challenge comprises two sub-challenges, namely the isometric challenge and the dynamic challenge.
+image: logo.png
+registration_auto_approve: False  # require approval from admin to join the comp
+docker_image: 'codalab/codalab-legacy:py312'
+
+# Documentation web pages
+terms: pages/terms.md
+pages:
+  - title: Overview
+    file: pages/overview.md
+  - title: Data
+    file: pages/data.md
+  - title: Evaluation
+    file: pages/evaluation.md
+  - title: Participation
+    file: pages/participate.md
+  - title: Organizers
+    file: pages/organizers.md
+
+phases:
+# - index: 0
+#   name: 'Phase 0: Archive'
+#   description: >-
+#     Community members contribute datasets (i.e., experimental or simulated HDsEMG data
+#     together with labeled spike trains), which are automatically standardised to the
+#     EMG-BIDS format. Each submitted dataset is assessed via a double-blind review process
+#     (also serving as the basis for the awards in the Data challenge). All datasets entering
+#     Phase 2 will be released on an open data repository (for datasets not entering the
+#     competition's data collection, this remains optional).
+#   start: 06-01-2026
+#   end: 06-14-2026
+#   tasks:
+#   - 4
+- index: 0
+  name: 'Phase 1: Familiarization'
+  description: >-
+    In parallel with the data challenge (Phase 0), algorithm developers are provided with training data from the MUniverse benchmark collection
+    (including labels), allowing teams to build, test, and optimize their neural source separation methods (for both algorithmic challenges).
+    To qualify for Phase 2, competitors must submit motor unit spike train predictions,
+    which are evaluated through an anonymized temporary leaderboard.
+  start: 06-15-2026
+  end: 09-30-2026
+  tasks:
+  - 0
+  - 1
+- index: 2
+  name: 'Phase 2: Showdown'
+  description: >-
+    The main algorithm competition is conducted using the data collection established in Phase 0 (whereby labels are hidden to competitors).
+    Prize-eligible entries are required to share code at the end of the competition; submissions based on proprietary code are not eligible for awards.
+    The final leaderboards for the Isometric challenge and the Dynamic challenge will be based solely on performance during the showdown phase
+    and will be publicly released (non-awarded teams can decide whether their identities remain hidden).
+  start: 11-01-2026
+  end: 12-31-2026
+  tasks:
+  - 2
+  - 3
+
+# Definition of the tasks
+tasks:
+- index: 0
+  name: Familiarization Task - isometric
+  description: 'Familiarization phase: design algorithms and submit identified spike-trains
+    within isometric conditions as BIDS event files. Ground-truth validation is enabled during this phase and an
+    anonymous leaderboard allows references.'
+  is_public: false
+  # input_data: input_data/isometric/familiarization/
+  # reference_data: reference_data/isometric/familiarization/
+  scoring_program: scoring/isometric/
+- index: 1
+  name: Familiarization Task - dynamic
+  description: 'Familiarization phase: design algorithms and submit identified spike-trains
+    within dynamic conditions as BIDS event files. Ground-truth validation is enabled during this phase and an
+    anonymous leaderboard allows references.'
+  is_public: false
+  # input_data: input_data/dynamic/familiarization/
+  # reference_data: reference_data/dynamic/familiarization/
+  scoring_program: scoring/dynamic/
+- index: 2
+  name: Showdown Task - isometric
+  description: 'Showdown phase: A thus far unseen isometric testdata set is provided, labels remain hidden. It is gametime!'
+  is_public: false
+  # input_data: input_data/isometric/showdown/
+  # reference_data: reference_data/isometric/showdown/
+  scoring_program: scoring/isometric/
+- index: 3
+  name: Showdown Task - dynamic
+  description: 'Showdown phase: A thus far unseen dynamic testdata set is provided, labels remain hidden. It is gametime!'
+  is_public: false
+  # input_data: input_data/dynamic/showdown/
+  # reference_data: reference_data/dynamic/showdown/
+  scoring_program: scoring/dynamic/
+# - index: 4
+#   name: Dataset validation task
+#   description: 'Submitted metadata is evaluated against the BIDS specification for EMG data.
+#     Upon successful validation, an email will be sent to the submitter containing an upload link to some cloud bucket'
+#   is_public: false
+#   scoring_program: scoring/data_challenge/
+
+leaderboards:
+- index: 0
+  title: Algorithm validation leaderboard
+  key: "algorithm_validation"
+  submission_rule: "Add_And_Delete_Multiple"
+  columns:
+  - title: "Accuracy"
+    key: "accuracy"
+    index: 0
+    sorting: desc
+  - title: "Precision"
+    key: "precision"
+    index: 1
+    sorting: desc
+  - title: "Recall"
+    key: "recall"
+    index: 2
+    sorting: desc
+  - title: "F1-Score"
+    key: "f1_score"
+    index: 3
+    sorting: desc
