@@ -4,7 +4,7 @@
 
 # Meta settings
 version: 2
-title: MUnitQuest - Algorithmic Challenge
+title: MUnitQuest - Algorithm Challenge
 description: >-
   Submission platform for the algorithmic challenges in the context of https://munitquest.github.io/.
   The challenge comprises two sub-challenges, namely the isometric challenge and the dynamic challenge.
@@ -21,31 +21,28 @@ pages:
     file: pages/data.md
   - title: Evaluation
     file: pages/evaluation.md
-  - title: Participation
-    file: pages/participate.md
-  - title: Organizers
-    file: pages/organizers.md
+  - title: Submission
+    file: pages/submission.md
 
 phases:
 - index: 0
-  name: 'Phase 1: Familiarization'
+  name: 'Familiarization'
   description: >-
-    In parallel with the data challenge (Phase 0), algorithm developers are provided with training data from the MUniverse benchmark collection
-    (including labels), allowing teams to build, test, and optimize their neural source separation methods (for both algorithmic challenges).
-    To qualify for Phase 2, competitors must submit motor unit spike train predictions,
-    which are evaluated through an anonymized temporary leaderboard.
+    In parallel with the data challenge, algorithm developers are provided with training data from the MUniverse benchmark collection
+    (including labels), allowing teams to build, test, and optimize their neural source separation methods (for both algorithmic tasks).
+    We highly encourage teams to submit preliminary results during this phase of the competition,
+    as this will familiariize competitors with the submission and preliminary, automated scoring procedure.
   start: 06-15-2026
   end: 09-30-2026
   tasks:
   - 0
   - 1
 - index: 2
-  name: 'Phase 2: Showdown'
+  name: 'Showdown'
   description: >-
-    The main algorithm competition is conducted using the data collection established in Phase 0 (whereby labels are hidden to competitors).
-    Prize-eligible entries are required to share code at the end of the competition; submissions based on proprietary code are not eligible for awards.
-    The final leaderboards for the Isometric challenge and the Dynamic challenge will be based solely on performance during the showdown phase
-    and will be publicly released (non-awarded teams can decide whether their identities remain hidden).
+    The main algorithm competition, conducted using the MUnitQuest data collection established during the Data Challenge (labels hidden from competitors).
+    Note that the organizers may make small alterations to the test data (e.g., injected noise, cropping signals)
+    to limit the advantage of teams also participating in the Data Challenge.
   start: 11-01-2026
   end: 12-31-2026
   tasks:
@@ -93,19 +90,11 @@ leaderboards:
   key: "algorithm_validation"
   submission_rule: "Add_And_Delete_Multiple"
   columns:
-  - title: "Accuracy"
-    key: "accuracy"
+  - title: "SIL"
+    key: "silhouette_score"
     index: 0
     sorting: desc
-  - title: "Precision"
-    key: "precision"
+  - title: "PNR"
+    key: "pnr"
     index: 1
-    sorting: desc
-  - title: "Recall"
-    key: "recall"
-    index: 2
-    sorting: desc
-  - title: "F1-Score"
-    key: "f1_score"
-    index: 3
     sorting: desc
