@@ -1,8 +1,11 @@
 # How to Submit
 This competition is result-submission only. Please upload a BIDS-event file reporting motor unit spike trains.
 
+## Algorithm Submission
+This is a prediction submission competition. During both the **Familiarization Phase** and the **Showdown Phase**, you will be asked to upload, for each recording, a tabular file (`recordingName_events.tsv`) containing your predicted motor unit spikes (BIDS-events file) together with a log file (`recordingName_log.json`) describing essential process metadata (further details to be announced). Submissions apply to both tasks (**Isometric** and **Dynamic**) independently. To be eligible for awards, you need to share your code openly (e.g., on GitHub) upon the completion of the competition.
+
 ## Result File Formats
-Your identified spike trains must be submitted in the form of a BIDS-event tabular file (`exampleRecordingName.tsv`). The following is minimal example:
+Your identified spike trains must be submitted in the form of a BIDS-event tabular file (`recordingName_events.tsv`). The following is an example on how to report motor unit spike trains:
 
 <table style="width: 100%; table-layout: fixed;">
   <thead>
@@ -78,6 +81,6 @@ exampleSubmission.zip
 ```
 
 ## Further Information
-tbd.
+**More information coming soon!**
 
-For more information and a mock submission, please refer to the provided **starter kit**!
+Please refer to https://munitquest.github.io/registration_and_submission/ and the provided **starter kit**! (coming soon)

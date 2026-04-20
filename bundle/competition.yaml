@@ -28,10 +28,9 @@ phases:
 - index: 0
   name: 'Familiarization'
   description: >-
-    In parallel with the data challenge, algorithm developers are provided with training data from the MUniverse benchmark collection
-    (including labels), allowing teams to build, test, and optimize their neural source separation methods (for both algorithmic tasks).
-    We highly encourage teams to submit preliminary results during this phase of the competition,
-    as this will familiariize competitors with the submission and preliminary, automated scoring procedure.
+    Running in parallel with the Data Challenge, algorithm developers are provided with training data from
+    the [MUniverse benchmark collection](https://openreview.net/pdf?id=Slrp3l7aYo) (including labels), allowing teams to build, test, and optimize
+    their methods for both tasks.
   start: 06-15-2026
   end: 09-30-2026
   tasks:
