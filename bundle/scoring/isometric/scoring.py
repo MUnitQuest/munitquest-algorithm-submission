@@ -1,3 +1,9 @@
+"""
+
+Funcionality for the scoring of the MUnitQuest algorithm Challenges.
+
+"""
+
 import numpy as np
 import pandas as pd
 
@@ -51,7 +57,11 @@ class ScoringConfig:
     cov_bins: list = field(default_factory=lambda: [0.1, 0.15, 0.2, 0.35, 0.4, 0.5])  
 
 class MUnitQuestScoring:
-    """ Class to score individual recordings in MUnitQuest """
+    """ 
+    Class to score individual recordings in MUnitQuest 
+    
+    
+    """
 
     def __init__(
             self, 
