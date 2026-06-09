@@ -1,11 +1,11 @@
 # How to Submit
-This competition is result-submission only. Please upload a BIDS-event file reporting motor unit spike trains.
+This competition is result-submission only. Please upload BIDS-event files reporting motor unit spike trains for each provided recording.
 
 ## Algorithm Submission
 This is a prediction submission competition. During both the **Familiarization Phase** and the **Showdown Phase**, you will be asked to upload, for each recording, a tabular file (`recordingName_events.tsv`) containing your predicted motor unit spikes (BIDS-events file) together with a log file (`recordingName_log.json`) describing essential process metadata (further details to be announced). Submissions apply to both tasks (**Isometric** and **Dynamic**) independently. To be eligible for awards, you need to share your code openly (e.g., on GitHub) upon the completion of the competition.
 
 ## Result File Formats
-Your identified spike trains must be submitted in the form of a BIDS-event tabular file (`recordingName_events.tsv`). The following is an example on how to report motor unit spike trains:
+Here is a minimal example of the format ([BIDS-event file](https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/events.html)) used for submitting motor unit spike trains
 
 <table style="width: 100%; table-layout: fixed;">
   <thead>
@@ -70,14 +70,15 @@ Your identified spike trains must be submitted in the form of a BIDS-event tabul
 - *unit_id*: Unique identifier (integer value) of the motor unit corresponding to the detected spike.
 - *description*: Human-readable free-text description of the event.
 
-<br/>Further, the submitted BIDS-event file is to be accompanied by a log-file (`exampleRecordingName_log.json`) describing essential process metadata (further details to be announced).
-
 ## Submission Format
-Codabench platform enforces all submissions to be a .zip archive.<br/>**Important**: Make sure that the .zip-Archive does not contain any parent directory.
+codabench platform enforces all submissions to be a .zip archive.<br/>**Important**: Ensure that event-files are located at the root-directory of the zip-Archive
 ```
 exampleSubmission.zip
-├── exampleRecordingName.tsv
-└── exampleRecordingName_log.json
+├── sub-01_exampleRecordingName_events.tsv
+├── sub-01_exampleRecordingName_log.json
+├── ...
+├── sub-0N_exampleRecordingName_events.tsv
+└── sub-0N_exampleRecordingName_log.json
 ```
 
 ## Further Information
