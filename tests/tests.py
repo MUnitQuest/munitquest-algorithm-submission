@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from ..bundle.scoring.isometric.scoring import ScoringConfig, MUnitQuestScoring
+from algorithm_scoring.scorer import ScoringConfig, MUnitQuestScoring
 
 def test_spike_based_scoring():
 
@@ -22,11 +22,11 @@ def test_spike_based_scoring():
         fsamp=2048,
         steps=steps,
         data=None,
-        ground_truth="./testdata/example_reference.tsv",
+        ground_truth="tests/testdata/example_reference.tsv",
         signal_metrics=False
     )
 
-    prediction = "./testdata/example_prediction.tsv"
+    prediction = "tests/testdata/example_prediction.tsv"
     scorer = MUnitQuestScoring(prediction=prediction, cfg=cfg)
     scorer.validate()
     scorer.get_score()
@@ -63,12 +63,12 @@ def test_signal_based_scoring():
     cfg = ScoringConfig(
         fsamp=2048,
         steps=steps,
-        data="./testdata/example_emg.edf",
-        ground_truth="./testdata/example_reference.tsv",
+        data="tests/testdata/example_emg.edf",
+        ground_truth="tests/testdata/example_reference.tsv",
         signal_metrics=True
     )
 
-    prediction = "./testdata/example_prediction.tsv"
+    prediction = "tests/testdata/example_prediction.tsv"
     scorer = MUnitQuestScoring(prediction=prediction, cfg=cfg)
     scorer.validate()
     scorer.get_score()
