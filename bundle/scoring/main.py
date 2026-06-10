@@ -2,7 +2,7 @@ import sys
 import os
 import time
 
-from algorithm_scoring.scorer import MUnitQuestScoring, ScoringConfig
+from algorithm_scoring.score_recording import MUnitQuestScoring, ScoringConfig
 
 
 if __name__ == "__main__":

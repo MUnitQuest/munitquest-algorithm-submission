@@ -105,16 +105,6 @@ class MUnitQuestScoring:
         }
         
         return metrics
-    
-    def _to_json(self, data: dict, path: str) -> None:
-        """
-        Helper function to save data as json file
-        Args:
-            data (dict): data to save
-            path (str): path to write data to
-        """
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
 
     def validate(self):
         """
