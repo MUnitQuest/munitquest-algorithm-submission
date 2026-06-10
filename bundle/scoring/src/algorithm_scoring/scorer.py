@@ -6,6 +6,7 @@ Funcionality for the scoring of the MUnitQuest algorithm Challenges.
 
 import numpy as np
 import pandas as pd
+import json
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -95,6 +96,25 @@ class MUnitQuestScoring:
         self.unit_metrics: pd.DataFrame = pd.DataFrame()
         self.valid: bool = False
         self.errors: list = []
+    
+    @property
+    def metrics(self):
+        metrics: dict[str, float | int] = {
+            "score": self.score,
+            **self.global_metrics
+        }
+        
+        return metrics
+    
+    def _to_json(self, data: dict, path: str) -> None:
+        """
+        Helper function to save data as json file
+        Args:
+            data (dict): data to save
+            path (str): path to write data to
+        """
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
 
     def validate(self):
         """
@@ -323,7 +343,7 @@ def validate_prediction_file(
         return False, errors
 
     # Check if all onset values are numeric values and larger than zero
-    if not np.issubdtype(mu_df["onset"].dtype, np.number):
+    if not pd.api.types.is_numeric_dtype(mu_df["onset"]):
         errors.append("'onset' must be numeric")
     else:
         invalid = mu_df["onset"] < 0
@@ -346,7 +366,7 @@ def validate_prediction_file(
         )
 
     # Check if the sample columns contains only integers
-    if not np.issubdtype(mu_df["sample"].dtype, np.integer):
+    if not pd.api.types.is_integer_dtype(mu_df["sample"]):
 
         invalid = np.mod(mu_df["sample"], 1) != 0
 
@@ -358,7 +378,7 @@ def validate_prediction_file(
             )
 
     # Check if the unit_id is always an integer
-    if not np.issubdtype(mu_df["unit_id"].dtype, np.integer):
+    if not pd.api.types.is_integer_dtype(mu_df["unit_id"]):
 
         invalid = np.mod(mu_df["unit_id"], 1) != 0
 

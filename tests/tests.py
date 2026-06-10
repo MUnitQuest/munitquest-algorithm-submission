@@ -16,7 +16,7 @@ def test_spike_based_scoring():
         {
             "step": "validate_prediction"
         }
-]
+    ]
 
     cfg = ScoringConfig(
         fsamp=2048,
@@ -48,8 +48,8 @@ def test_signal_based_scoring():
         {
             "step": "validate_prediction"
         },
-            {
-        "step": "fit_from_spikes"
+        {
+            "step": "fit_from_spikes"
         },
         {
             "step": "bad_source_detection",
@@ -58,7 +58,7 @@ def test_signal_based_scoring():
             "min_spikes": 10,
             "mode": "below"
         } 
-]
+    ]
 
     cfg = ScoringConfig(
         fsamp=2048,
@@ -75,6 +75,4 @@ def test_signal_based_scoring():
 
     assert np.isclose(scorer.score, 11.060158277942975), (
         "Your does not match the expected value"
-    )    
-
-    
+    )  
