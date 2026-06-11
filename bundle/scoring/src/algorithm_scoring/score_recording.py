@@ -65,7 +65,7 @@ class MUnitQuestScoring:
     """
 
     def __init__(
-            self, 
+            self,
             prediction: str,
             cfg = ScoringConfig
     ):

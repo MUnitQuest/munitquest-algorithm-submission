@@ -33,19 +33,21 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.warnings: list[dict] = []
 
         self.results: dict[str, dict[float]] = {}  # keeps track of each scoring result
-        self.unit_metrics: dict[str, pd.DataFrame]
+        self.unit_metrics: dict[str, pd.DataFrame] = {}
 
-        self.reporter: AlgorithmSubmissionReport = AlgorithmSubmissionReport()
+        # self.reporter: AlgorithmSubmissionReport = AlgorithmSubmissionReport()
     
     @property
     def metrics(self) -> dict:
         """
         Aggregates to individual metrics to global score for leaderboard export
-
-        Raises:
-            NotImplementedError: _description_
         """
-        raise NotImplementedError
+        # pandas is a nice option as it handles missing data automatically
+        # filenames will be index, that's why mean works
+        metric_df: pd.DataFrame = pd.DataFrame.from_dict(self.results, orient="index")
+        universal_metrics: dict = metric_df.mean().to_dict()
+
+        return universal_metrics
     
     def _to_json(self, data: dict, path: str) -> None:
         """
@@ -173,8 +175,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
 
             # TODO
-            # assumes predictions and label files are named equally
-            prediction: str = os.path.join(self.prediction_path, label_file)
+            # assumes predictions and label files are named equally, except for desc-label
+            prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposed"))
             # check if there exists an according prediction
             if not os.path.exists(prediction):
                 self.warnings.append("TODO")

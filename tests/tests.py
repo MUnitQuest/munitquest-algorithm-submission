@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from algorithm_scoring.scorer import ScoringConfig, MUnitQuestScoring
+from algorithm_scoring.score_recording import ScoringConfig, MUnitQuestScoring
 
 def test_spike_based_scoring():
 
