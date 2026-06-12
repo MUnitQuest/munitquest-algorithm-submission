@@ -17,7 +17,7 @@ def main():
 
     munitquest_scorer.run()
     print(munitquest_scorer.metrics)
-    munitquest_scorer.export(os.path.join(output_path, "scores.json"))
+    munitquest_scorer.export(output_path)
 
 
 if __name__ == "__main__":

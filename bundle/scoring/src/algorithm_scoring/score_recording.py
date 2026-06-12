@@ -88,6 +88,9 @@ class ValidationItem:
     severity: str = "error"
     origin: str = "MUnitQuest Custom Validator"
 
+    def itemize(self):
+        return asdict(self)
+
 
 class MUnitQuestScoring:
     """ 
@@ -340,13 +343,11 @@ def validate_prediction_file(
         df = pd.read_table(file)
     except Exception as e:
         errors.append(
-            asdict(
-                ValidationItem(
-                    code="UNREADABLE_EVENTS_TSV_FORMAT",
-                    location=file,
-                    issueMessage=f"Error when reading {file}. Please validate file format. Error message: {e}"
-                )
-            )
+            ValidationItem(
+                code="UNREADABLE_EVENTS_TSV_FORMAT",
+                location=file,
+                issueMessage=f"Error when reading {file}. Please validate file format. Error message: {e}"
+            ).itemize()
         )
         return False, errors, warnings
 
@@ -355,13 +356,11 @@ def validate_prediction_file(
 
     if missing:
         errors.append(
-            asdict(
-                ValidationItem(
+            ValidationItem(
                     code="MISSING_EVENT_COLUMN",
                     location=file,
                     issueMessage=f"Missing required columns: {sorted(missing)}"
-                )
-            )
+            ).itemize()
         )
 
         # Cannot continue safely
@@ -373,26 +372,22 @@ def validate_prediction_file(
 
     if len(mu_df) == 0:
         errors.append(
-            asdict(
-                ValidationItem(
-                    code="MISSING_MU_SPIKE_EVENTS",
-                    location=file,
-                    issueMessage="motor-unit-spike missing in event description column"
-                )
-            )
+            ValidationItem(
+                code="MISSING_MU_SPIKE_EVENTS",
+                location=file,
+                issueMessage="motor-unit-spike missing in event description column"
+            ).itemize()
         )
         return False, errors, warnings
 
     # Check if all onset values are numeric values and larger than zero
     if not pd.api.types.is_numeric_dtype(mu_df["onset"]):
         errors.append(
-            asdict(
-                ValidationItem(
-                    code="ONSET_MUST_BE_NUMERIC",
-                    location=file,
-                    issueMessage="Onset must be numeric"
-                )
-            )
+            ValidationItem(
+                code="ONSET_MUST_BE_NUMERIC",
+                location=file,
+                issueMessage="Onset must be numeric"
+            ).itemize()
         )
     else:
         invalid = mu_df["onset"] < 0
@@ -400,13 +395,11 @@ def validate_prediction_file(
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                asdict(
-                    ValidationItem(
-                        code="ONSET_NOT_LARGER_ZERO",
-                        location=file,
-                        issueMessage=f"Onset must be >= 0, invalid rows: {bad_idx}"
-                    )
-                )
+                ValidationItem(
+                    code="ONSET_NOT_LARGER_ZERO",
+                    location=file,
+                    issueMessage=f"Onset must be >= 0, invalid rows: {bad_idx}"
+                ).itemize()
             )
 
     # Check if the duration of all motor unit spikes is zero
@@ -415,63 +408,53 @@ def validate_prediction_file(
     if invalid.any():
         bad_idx = mu_df.index[invalid].tolist()
         errors.append(
-            asdict(
-                    ValidationItem(
-                        code="DURATION_NOT_ZERO",
-                        location=file,
-                        issueMessage=f"Duration for MU spikes must always be 0, invalid rows: {bad_idx}"
-                    )
-                )
+            ValidationItem(
+                code="DURATION_NOT_ZERO",
+                location=file,
+                issueMessage=f"Duration for MU spikes must always be 0, invalid rows: {bad_idx}"
+            ).itemize()
         )
 
     # Check if the sample columns contains only integers
     if not pd.api.types.is_integer_dtype(mu_df["sample"]):
         errors.append(
-            asdict(
-                ValidationItem(
-                    code="SAMPLE_MUST_BE_INTEGER",
-                    location=file,
-                    issueMessage="Sample must be of type Integer"
-                )
-            )
+            ValidationItem(
+                code="SAMPLE_MUST_BE_INTEGER",
+                location=file,
+                issueMessage="Sample must be of type Integer"
+            ).itemize()
         )
     else:
         invalid: pd.Series[bool] = mu_df["sample"] < 0
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                asdict(
-                    ValidationItem(
-                        code="SAMPLE_NOT_LARGER_ZERO",
-                        location=file,
-                        issueMessage=f"Sample must be >= 0, invalid_rows: {bad_idx}"
-                    )
-                )
+                ValidationItem(
+                    code="SAMPLE_NOT_LARGER_ZERO",
+                    location=file,
+                    issueMessage=f"Sample must be >= 0, invalid_rows: {bad_idx}"
+                ).itemize()
             )
 
     # Check if the unit_id is always an integer
     if not pd.api.types.is_integer_dtype(mu_df["unit_id"]):
         errors.append(
-            asdict(
-                ValidationItem(
-                    code="ID_MUST_BE_INTEGER",
-                    location=file,
-                    issueMessage="Unit ID must be of type Integer"
-                )
-            )
+            ValidationItem(
+                code="ID_MUST_BE_INTEGER",
+                location=file,
+                issueMessage="Unit ID must be of type Integer"
+            ).itemize()
         )
     else:
         invalid: pd.Series[bool] = mu_df["unit_id"] < 0
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                asdict(
-                    ValidationItem(
-                        code="UNIT_ID_NOT_LARGER_ZERO",
-                        location=file,
-                        issueMessage=f"unit_id must be >= 0, invalid_rows: {bad_idx}"
-                    )
-                )
+                ValidationItem(
+                    code="UNIT_ID_NOT_LARGER_ZERO",
+                    location=file,
+                    issueMessage=f"unit_id must be >= 0, invalid_rows: {bad_idx}"
+                ).itemize()
             )
 
     # Final validation

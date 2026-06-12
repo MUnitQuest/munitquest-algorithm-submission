@@ -11,7 +11,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from algorithm_scoring.score_recording import MUnitQuestScoring, ScoringConfig
+from algorithm_scoring.score_recording import MUnitQuestScoring, ScoringConfig, ValidationItem
 from algorithm_scoring.report import AlgorithmSubmissionReport
 
 
@@ -64,16 +64,22 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
     
     def export(self, path: str) -> None:
         """
-        Exports the leaderboard-effective, aggregated results
+        Exports the leaderboard-effective, aggregated results. Additionally,
+        a dataframe for each recording is exported, containing MU-level information.
 
         Args:
             path (str): filepath that must be scores.json
         """
-        filename: str = path.split("/")[-1]
-        if filename != "scores.json":
-            path = path.replace(filename, "scores.json")
+        filename: str = os.path.join(path, "scores.json")
+        self._to_json(self.metrics, filename)
+
+        table_path: str = os.path.join(path, "motor_unit_details")
+        if not os.path.exists(table_path):
+            os.makedirs(table_path)
         
-        self._to_json(self.metrics, path)
+        for key, df in self.unit_metrics.items():
+            filename: str = os.path.join(table_path, key.split("/")[-1].replace("events.tsv", "mu-details.tsv"))
+            df.to_csv(filename, sep="\t", index=False)
 
         return None
 
@@ -126,6 +132,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
         scorer.get_score()
+
+        print(scorer.metrics)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
     
@@ -167,25 +175,33 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
         scorer.get_score()
+
+        print(scorer.metrics)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
 
     def run(self) -> None:
         for label_file in os.listdir(self.ground_truth_path):
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
+            recording: str = f"familiarisation-dataset-demo/{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}"
 
             # TODO
             # assumes predictions and label files are named equally, except for desc-label
             prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposed"))
             # check if there exists an according prediction
             if not os.path.exists(prediction):
-                self.warnings.append("TODO")
+                self.warnings.append(
+                    ValidationItem(
+                        code="MISSING_PREDICTION",
+                        location=recording,
+                        issueMessage=f"No prediction found for {recording}. Esnure accurate filename conventions, e.g. {prediction}"
+                    )
+                )
                 continue
 
             # check if signal-based recording required
             # TODO
             signal_based: bool = False
-            recording: str = ""
 
             if signal_based:
                 metrics, errors, unit_metrics = self._score_signal_based(
@@ -202,6 +218,6 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             self.results[prediction] = metrics
             self.unit_metrics[prediction] = unit_metrics
             # TODO
-            self.warnings += errors
+            self.errors += errors
         
         return None
