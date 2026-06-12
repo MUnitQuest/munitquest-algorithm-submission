@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import json
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Optional
 from pyedflib.highlevel import read_edf
 from muniverse.algorithms.post_processing import PostProcessCBSS
@@ -55,7 +55,39 @@ class ScoringConfig:
     signal_metrics: bool = field(default=True) 
     sil_bins: list = field(default_factory=lambda: [0.9, 0.925, 0.95]) 
     pnr_bins: list = field(default_factory=lambda: [30, 35, 40])
-    cov_bins: list = field(default_factory=lambda: [0.1, 0.15, 0.2, 0.35, 0.4, 0.5])  
+    cov_bins: list = field(default_factory=lambda: [0.1, 0.15, 0.2, 0.35, 0.4, 0.5])
+
+
+@dataclass
+class ValidationItem:
+    """ 
+    Data class to configure errors and warnings 
+
+    Args
+    ----
+    code : str
+        code of the warning, error
+    
+    severity : str
+        error or warning
+    
+    location : str
+        file the error/warning occured in
+    
+    origin : str
+        to adhere to validator from data challenge.
+        Only resolves to MUnitQuest Custom Validator
+    
+    issueMessage : str
+        detailed description of the error/warning
+
+    """
+    code: str
+    location: str
+    issueMessage: str
+    severity: str = "error"
+    origin: str = "MUnitQuest Custom Validator"
+
 
 class MUnitQuestScoring:
     """ 
@@ -112,7 +144,7 @@ class MUnitQuestScoring:
 
         """
 
-        self.valid, self.errors = validate_prediction_file(self.prediction)
+        self.valid, self.errors, _ = validate_prediction_file(self.prediction)
 
 
     def get_score(self):
@@ -265,7 +297,7 @@ class MUnitQuestScoring:
 
 def validate_prediction_file(
     file: str,
-) -> tuple[bool, list[str]]:
+) -> tuple[bool, list[dict], list[dict]]:
     """
     Validate a BIDS-like motor unit events table.
 
@@ -291,7 +323,8 @@ def validate_prediction_file(
     """
 
     # Init list of errors
-    errors = []
+    errors: list[dict] = []
+    warnings: list[dict] = []  # template for raising warnings
 
     # Define required column names
     required_columns = {
@@ -305,22 +338,34 @@ def validate_prediction_file(
     # Load the file
     try:
         df = pd.read_table(file)
-    except:
+    except Exception as e:
         errors.append(
-            f"Failed loading file {file}."
+            asdict(
+                ValidationItem(
+                    code="UNREADABLE_EVENTS_TSV_FORMAT",
+                    location=file,
+                    issueMessage=f"Error when reading {file}. Please validate file format. Error message: {e}"
+                )
+            )
         )
-        return False, errors
+        return False, errors, warnings
 
     # Check if required columns are present
     missing = required_columns - set(df.columns)
 
     if missing:
         errors.append(
-            f"Missing required columns: {sorted(missing)}"
+            asdict(
+                ValidationItem(
+                    code="MISSING_EVENT_COLUMN",
+                    location=file,
+                    issueMessage=f"Missing required columns: {sorted(missing)}"
+                )
+            )
         )
 
         # Cannot continue safely
-        return False, errors
+        return False, errors, warnings
 
 
     # Check if the file includes motor unit spike events
@@ -328,21 +373,40 @@ def validate_prediction_file(
 
     if len(mu_df) == 0:
         errors.append(
-            "No rows with description == 'motor-unit-spike'"
+            asdict(
+                ValidationItem(
+                    code="MISSING_MU_SPIKE_EVENTS",
+                    location=file,
+                    issueMessage="motor-unit-spike missing in event description column"
+                )
+            )
         )
-        return False, errors
+        return False, errors, warnings
 
     # Check if all onset values are numeric values and larger than zero
     if not pd.api.types.is_numeric_dtype(mu_df["onset"]):
-        errors.append("'onset' must be numeric")
+        errors.append(
+            asdict(
+                ValidationItem(
+                    code="ONSET_MUST_BE_NUMERIC",
+                    location=file,
+                    issueMessage="Onset must be numeric"
+                )
+            )
+        )
     else:
         invalid = mu_df["onset"] < 0
 
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                f"'onset' must be >= 0 "
-                f"(invalid rows: {bad_idx})"
+                asdict(
+                    ValidationItem(
+                        code="ONSET_NOT_LARGER_ZERO",
+                        location=file,
+                        issueMessage=f"Onset must be >= 0, invalid rows: {bad_idx}"
+                    )
+                )
             )
 
     # Check if the duration of all motor unit spikes is zero
@@ -351,35 +415,66 @@ def validate_prediction_file(
     if invalid.any():
         bad_idx = mu_df.index[invalid].tolist()
         errors.append(
-            f"'duration' must always be 0 "
-            f"(invalid rows: {bad_idx})"
+            asdict(
+                    ValidationItem(
+                        code="DURATION_NOT_ZERO",
+                        location=file,
+                        issueMessage=f"Duration for MU spikes must always be 0, invalid rows: {bad_idx}"
+                    )
+                )
         )
 
     # Check if the sample columns contains only integers
     if not pd.api.types.is_integer_dtype(mu_df["sample"]):
-
-        invalid = np.mod(mu_df["sample"], 1) != 0
-
+        errors.append(
+            asdict(
+                ValidationItem(
+                    code="SAMPLE_MUST_BE_INTEGER",
+                    location=file,
+                    issueMessage="Sample must be of type Integer"
+                )
+            )
+        )
+    else:
+        invalid: pd.Series[bool] = mu_df["sample"] < 0
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                f"'sample' must contain integers "
-                f"(invalid rows: {bad_idx})"
+                asdict(
+                    ValidationItem(
+                        code="SAMPLE_NOT_LARGER_ZERO",
+                        location=file,
+                        issueMessage=f"Sample must be >= 0, invalid_rows: {bad_idx}"
+                    )
+                )
             )
 
     # Check if the unit_id is always an integer
     if not pd.api.types.is_integer_dtype(mu_df["unit_id"]):
-
-        invalid = np.mod(mu_df["unit_id"], 1) != 0
-
+        errors.append(
+            asdict(
+                ValidationItem(
+                    code="ID_MUST_BE_INTEGER",
+                    location=file,
+                    issueMessage="Unit ID must be of type Integer"
+                )
+            )
+        )
+    else:
+        invalid: pd.Series[bool] = mu_df["unit_id"] < 0
         if invalid.any():
             bad_idx = mu_df.index[invalid].tolist()
             errors.append(
-                f"'unit_id' must contain integers "
-                f"(invalid rows: {bad_idx})"
+                asdict(
+                    ValidationItem(
+                        code="UNIT_ID_NOT_LARGER_ZERO",
+                        location=file,
+                        issueMessage=f"unit_id must be >= 0, invalid_rows: {bad_idx}"
+                    )
+                )
             )
 
     # Final validation
     is_valid = len(errors) == 0
 
-    return is_valid, errors
+    return is_valid, errors, warnings
