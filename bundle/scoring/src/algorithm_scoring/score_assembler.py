@@ -45,6 +45,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         """
         self.prediction_path = prediction_path
         self.ground_truth_path = ground_truth_path
+        # assumes the recording to be in the parent directory
+        self.recording_path: str = os.path.dirname(ground_truth_path.rstrip("/"))
 
         self.errors: list[dict] = []
         self.warnings: list[dict] = []
@@ -52,7 +54,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.results: dict[str, dict[float]] = {}  # keeps track of each scoring result
         self.unit_metrics: dict[str, pd.DataFrame] = {}
 
-        # self.reporter: AlgorithmSubmissionReport = AlgorithmSubmissionReport()
+        self.reporter: AlgorithmSubmissionReport | None = None
     
     @property
     def metrics(self) -> dict:
@@ -88,10 +90,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
     def export(self, path: str) -> None:
         """
         Exports the leaderboard-effective, aggregated results. Additionally,
-        a dataframe for each recording is exported, containing MU-level information.
+        a dataframe for each recording is exported, containing MU-level information,
+        as well as a detailed html report.
 
         Args:
-            path (str): filepath that must be scores.json
+            path (str): output directory
         """
         filename: str = os.path.join(path, "scores.json")
         self._to_json(self.metrics, filename)
@@ -103,6 +106,9 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         for key, df in self.unit_metrics.items():
             filename: str = os.path.join(table_path, key.split("/")[-1].replace("events.tsv", "mu-details.tsv"))
             df.to_csv(filename, sep="\t", index=False)
+        
+        # export html-report
+        self.reporter.save_html_report(os.path.join(path, "detailed_results.html"))
 
         return None
 
@@ -205,8 +211,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
     def run(self, **kwargs) -> None:
         """ orchestrates scoring """
         for label_file in os.listdir(self.ground_truth_path):
+            if label_file.endswith(".json"):
+                continue
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
-            recording: str = f"familiarisation-dataset-demo/{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}"
+            # TODO
+            recording: str = os.path.join(self.recording_path, f"{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}")
 
             # TODO
             # assumes predictions and label files are named equally, except for desc-label
@@ -217,8 +226,9 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                     ValidationItem(
                         code="MISSING_PREDICTION",
                         location=recording,
-                        issueMessage=f"No prediction found for {recording}. Esnure accurate filename conventions, e.g. {prediction}"
-                    )
+                        issueMessage=f"No prediction found for {recording}. Esnure accurate filename conventions, e.g. {prediction}",
+                        severity="warning"
+                    ).itemize()
                 )
                 continue
             
@@ -248,5 +258,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         
         print("Universal Results:")
         self._pretty_print(self.metrics)
+
+        self.reporter = AlgorithmSubmissionReport(
+            results=self.results,
+            universal_metrics=self.metrics,
+            issues=self.errors + self.warnings
+        )
+        self.reporter.generate_report()
         
         return None

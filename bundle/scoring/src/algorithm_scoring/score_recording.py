@@ -461,3 +461,8 @@ def validate_prediction_file(
     is_valid = len(errors) == 0
 
     return is_valid, errors, warnings
+
+
+def validate_prediction_log(logfile: dict):
+    """ placeholder for validating the logfile accompanying a prediction """
+    raise NotImplementedError
