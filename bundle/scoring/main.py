@@ -6,6 +6,7 @@ from algorithm_scoring.score_assembler import MUnitQuestAlgorithmChallengeOrches
 
 
 def main():
+    assert len(sys.argv) == 4, "Usage python3 main.py <input_path> <ground_truth_path> <output_path>"
     input_path: str = sys.argv[1]
     ground_truth_path: str = sys.argv[2]
     output_path: str = sys.argv[3]
@@ -16,7 +17,6 @@ def main():
     )
 
     munitquest_scorer.run()
-    print(munitquest_scorer.metrics)
     munitquest_scorer.export(output_path)
 
 

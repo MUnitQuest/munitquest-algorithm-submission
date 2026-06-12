@@ -8,11 +8,28 @@ tracked and aggregated results to the leaderboard and a html-report.
 
 import os
 import json
+import time
 import numpy as np
 import pandas as pd
 
+from functools import wraps
+from typing import Any
+
 from algorithm_scoring.score_recording import MUnitQuestScoring, ScoringConfig, ValidationItem
 from algorithm_scoring.report import AlgorithmSubmissionReport
+
+
+def timer(description: str):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            start: float = time.perf_counter()
+            result: Any = func(*args, **kwargs)
+            elapsed: float = time.perf_counter() - start
+            print(f"{description}: {elapsed:.2f} seconds")
+            return result
+        return wrapper
+    return decorator
 
 
 class MUnitQuestAlgorithmChallengeOrchestrator:
@@ -59,6 +76,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
     
+    @staticmethod
+    def _pretty_print(data: dict) -> None:
+        """ Helper to aesthetically print dictionaries """
+        print(json.dumps(data, indent=4))
+        print("\n")
+    
     def generate_report(self):
         raise NotImplementedError
     
@@ -84,6 +107,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         return None
 
     @staticmethod
+    @timer("Signal-based scoring took")
     def _score_signal_based(prediction: str, ground_truth: str, recording: str) -> tuple[dict, list, pd.DataFrame]:
         """
         Signal based scoring in the case of incomplete labels. Therefore,
@@ -132,12 +156,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
         scorer.get_score()
-
-        print(scorer.metrics)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
     
     @staticmethod
+    @timer("Spike-train scoring took")
     def _score_spike_trains(prediction: str, ground_truth: str) -> tuple[dict, list, pd.DataFrame]:
         """
         We absolutely know all the spike trains and MUs (synthetic data).
@@ -175,12 +198,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
         scorer.get_score()
-
-        print(scorer.metrics)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
 
-    def run(self) -> None:
+    @timer("Aggregated scoring time")
+    def run(self, **kwargs) -> None:
+        """ orchestrates scoring """
         for label_file in os.listdir(self.ground_truth_path):
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
             recording: str = f"familiarisation-dataset-demo/{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}"
@@ -198,6 +221,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                     )
                 )
                 continue
+            
+            print(f"Scoring detected Motor Units in {prediction}\nRecording {recording}\nLabelfile: {ground_truth}")
 
             # check if signal-based recording required
             # TODO
@@ -217,7 +242,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             
             self.results[prediction] = metrics
             self.unit_metrics[prediction] = unit_metrics
-            # TODO
             self.errors += errors
+            
+            self._pretty_print(metrics)
+        
+        print("Universal Results:")
+        self._pretty_print(self.metrics)
         
         return None
