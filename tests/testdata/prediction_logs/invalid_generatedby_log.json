@@ -1,0 +1,14 @@
+{
+    "GeneratedBy": {
+        "Name": "",
+        "Description": null,
+        "Version": "",
+        "Container": null
+    },
+    "Runtime": 50.45,
+    "Environment": {
+        "CPU": "arm",
+        "GPU": [],
+        "RAM": 32
+    }
+}
