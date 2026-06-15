@@ -119,6 +119,93 @@ class AlgorithmSubmissionReport:
                         padding: 6px 10px;
                         cursor: pointer;
                     }
+                    .issue-section-good {
+                        background: #f1fbf1;
+                        border: 1px solid #cce5cc;
+                        border-radius: 8px;
+                        padding: 20px;
+                    }
+
+                    .issue-section-bad {
+                        background: #fff2f2;
+                        border: 1px solid #f0c4c4;
+                        border-radius: 8px;
+                        padding: 20px;
+                    }
+
+                    .issue-card {
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        margin-bottom: 10px;
+                        overflow: hidden;
+                    }
+
+                    .issue-header {
+                        width: 100%;
+                        background: #fafafa;
+                        border: none;
+                        padding: 12px;
+                        text-align: left;
+                        cursor: pointer;
+
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+
+                    .issue-header:hover {
+                        background: #eee;
+                    }
+
+                    .issue-content {
+                        display: none;
+                        padding: 15px;
+                        background: white;
+                    }
+
+                    .issue-card.active .issue-content {
+                        display: block;
+                    }
+
+                    .issue-card.active .arrow {
+                        transform: rotate(90deg);
+                    }
+
+                    .issue-property {
+                        margin-bottom: 8px;
+                    }
+
+                    .issue-property b {
+                        display: inline-block;
+                        width: 100px;
+                    }
+                    .summary-cards {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 15px;
+                        margin-bottom: 25px;
+                    }
+
+                    .summary-card {
+                        flex: 1;
+                        min-width: 180px;
+                        background: #fafafa;
+                        border: 1px solid #ddd;
+                        border-radius: 8px;
+                        padding: 15px;
+                    }
+
+                    .summary-card-title {
+                        font-size: 0.9em;
+                        color: #666;
+                        margin-bottom: 8px;
+                    }
+
+                    .summary-card-value {
+                        font-size: 1.8em;
+                        font-weight: bold;
+                        color: #333;
+                    }
                 </style>
             </head>
         """
@@ -152,59 +239,225 @@ class AlgorithmSubmissionReport:
         return counter, grouped
     
     def build_issues_section(self) -> str:
+
         if len(self.issues) == 0:
             return """
-            <section>
+            <section class="issue-section-good">
                 <h2>Warnings & Errors</h2>
                 <p class="ok">No issues detected.</p>
             </section>
             """
-        
-        sev_counter, sev_grouped = self._aggregate_by_key(self.issues, key="severity")
 
-        for severity, count in sev_counter.items():
-            agg: str = f"<tr><td>{severity}</td><td>{count}</td></tr>"
-
-        rows: str = "\n".join(
-            f"""
-            <tr>
-                <td>{escape(i.get('severity', 'unknown'))}</td>
-                <td>{escape(i.get('code', ''))}</td>
-                <td>{escape(i.get('location', ''))}</td>
-                <td>{escape(i.get('issueMessage', ''))}</td>
-            </tr>
-            """
-            for i in self.issues
+        severity_counter, severity_grouped = self._aggregate_by_key(
+            self.issues,
+            key="severity"
         )
 
+        has_errors: bool = severity_counter.get("error", 0) > 0
+
+        section_class = (
+            "issue-section-bad"
+            if has_errors
+            else "issue-section-good"
+        )
+
+        # ---------- severity summary ----------
+        severity_rows = "\n".join(
+            f"""
+            <tr>
+                <td>{escape(severity)}</td>
+                <td>{count}</td>
+            </tr>
+            """
+            for severity, count in severity_counter.items()
+        )
+
+        # ---------- code summary ----------
+        code_rows = []
+
+        for severity, issues in severity_grouped.items():
+
+            code_counter, _ = self._aggregate_by_key(
+                issues,
+                key="code"
+            )
+
+            for code, count in code_counter.items():
+                code_rows.append(
+                    f"""
+                    <tr>
+                        <td>{escape(severity)}</td>
+                        <td>{escape(code)}</td>
+                        <td>{count}</td>
+                    </tr>
+                    """
+                )
+
+        code_rows = "\n".join(code_rows)
+
+        # ---------- individual issue cards ----------
+        issue_cards = []
+
+        for i in self.issues:
+
+            severity = escape(i.get("severity", "unknown"))
+            code = escape(i.get("code", ""))
+            location = escape(i.get("location", ""))
+            message = escape(i.get("issueMessage", ""))
+
+            issue_cards.append(
+                f"""
+                <div class="issue-card">
+                    <button class="issue-header"
+                            onclick="toggleIssue(this)">
+                        <span>
+                            [{severity.upper()}] {location}
+                        </span>
+                        <span class="arrow">▶</span>
+                    </button>
+
+                    <div class="issue-content">
+
+                        <div class="issue-property">
+                            <b>Severity:</b> {severity}
+                        </div>
+
+                        <div class="issue-property">
+                            <b>Code:</b> {code}
+                        </div>
+
+                        <div class="issue-property">
+                            <b>Location:</b>
+                            <br>
+                            {location}
+                        </div>
+
+                        <div class="issue-property">
+                            <b>Description:</b>
+                            <br>
+                            {message}
+                        </div>
+
+                    </div>
+                </div>
+                """
+            )
+
+        issue_cards = "\n".join(issue_cards)
+
         return f"""
-            <section>
-                <h2>Warnings & Errors</h2>
-                {agg}
-                <table>
-                    <thead>
-                        <tr><th>Severity</th><th>Code</th><th>Location</th><th>Description</th></tr>
-                    </thead>
-                    <tbody>{rows}</tbody>
-                </table>
-            </section>
+        <section class="{section_class}">
+
+            <h2>Warnings & Errors</h2>
+
+            <h3>Summary by Severity</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {severity_rows}
+                </tbody>
+            </table>
+
+            <h3>Summary by Code</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Code</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {code_rows}
+                </tbody>
+            </table>
+
+            <h3>Detailed Issues</h3>
+
+            {issue_cards}
+
+        </section>
         """
     
     def build_universal_section(self):
+        metadata: dict[str, Any] = {
+            "predictions_scored": len(self.results),
+            "accepted_units_total": sum(
+                x["accepted_units"]
+                for x in self.results.values()
+            ),
+            "rejected_units_total": sum(
+                x["rejected_units"]
+                for x in self.results.values()
+            )
+        }
+        
         rows: str = "\n".join(
             f"<tr><td>{escape(k)}</td><td>{self._fmt(v)}</td></tr>"
             for k, v in self.universal_metrics.items()
         )
 
+        cards: str = f"""
+            <div class="summary-cards">
+
+                <div class="summary-card">
+                    <div class="summary-card-title">
+                        Predictions scored
+                    </div>
+                    <div class="summary-card-value">
+                        {metadata["predictions_scored"]}
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-card-title">
+                        Accepted units
+                    </div>
+                    <div class="summary-card-value">
+                        {metadata["accepted_units_total"]}
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-card-title">
+                        Rejected units
+                    </div>
+                    <div class="summary-card-value">
+                        {metadata["rejected_units_total"]}
+                    </div>
+                </div>
+
+            </div>
+            """
+
         return f"""
             <section>
                 <h2>Universal Results</h2>
+
+                {cards}
+
+                <h3>Performance Metrics</h3>
+
                 <table>
-                    <thead><tr><th>Metric</th><th>Value</th></tr></thead>
-                    <tbody>{rows}</tbody>
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
                 </table>
             </section>
-        """
+            """
     
     def build_file_accordion(self):
         blocks: list[str] = []
@@ -257,6 +510,10 @@ class AlgorithmSubmissionReport:
 
                 <script>
                     function toggleAccordion(btn) {{
+                        const item = btn.parentElement;
+                        item.classList.toggle("active");
+                    }}
+                    function toggleIssue(btn) {{
                         const item = btn.parentElement;
                         item.classList.toggle("active");
                     }}

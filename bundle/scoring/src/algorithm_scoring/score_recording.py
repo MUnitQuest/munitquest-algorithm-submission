@@ -133,6 +133,7 @@ class MUnitQuestScoring:
         self.unit_metrics: pd.DataFrame = pd.DataFrame()
         self.valid: bool = False
         self.errors: list = []
+        self.warnings: list = []
     
     @property
     def metrics(self):
@@ -148,9 +149,12 @@ class MUnitQuestScoring:
         Validate the prediction file
 
         """
-
-        self.valid, self.errors, _ = validate_prediction_file(self.prediction)
-
+        valid_tsv, errors_tsv, warnings_tsv = validate_prediction_file(self.prediction)
+        valid_json, errors_json, warnings_json = validate_prediction_log(self.prediction)
+        
+        self.valid = valid_tsv and valid_json
+        self.errors += errors_tsv + errors_json
+        self.warnings += warnings_tsv + warnings_json
 
     def get_score(self):
         """
@@ -299,6 +303,7 @@ class MUnitQuestScoring:
             score = 0   
 
         return score
+
 
 def validate_prediction_file(
     file: str,
