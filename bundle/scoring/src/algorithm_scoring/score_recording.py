@@ -11,7 +11,7 @@ import os
 
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from pyedflib.highlevel import read_edf
 from muniverse.algorithms.post_processing import PostProcessCBSS
 
@@ -472,23 +472,36 @@ def validate_prediction_file(
 
 def validate_prediction_log(
         prediction: str,
-        required: dict={
+        schema: dict={
             "GeneratedBy": {
-                "Name": str,
-                "Description": str,
-                "CodeURL": str,
-                # "License": str,
-                "Version": str | None,
-                "Container": str | None
+                "Name": {
+                    "required": True,
+                    "type": str
+                },
+                "Description": {
+                    "required": True,
+                    "type": str
+                },
+                "CodeURL": {
+                    "required": True,
+                    "type": str
+                },
+                "License": {
+                    "required": True,
+                    "type": str
+                },
+                "Version": {
+                    "required": False,
+                    "type": str | None
+                },
+                "Container": {
+                    "required": False,
+                    "type": str | None
+                }
             },
-            "Environment": {
-                "CPU": str,
-                "GPU": list | None,
-                "RAM": int | float,
-            },
-            "Runtime": float
-        },
-        optional: dict={}
+            "Environment": dict,
+            "Execution": dict
+        }
     ) -> tuple[bool, list[dict], list[dict]]:
     """
     Checks existence and required contents of the logfile
@@ -497,8 +510,7 @@ def validate_prediction_log(
 
     Args:
         prediction (str): path to prediction,
-        required (dict): minimum viable version of logfile,
-        optional (dict): dictionary of recommended fields
+        schema (dict): schema for the validator to follow
     
     Returns:
         tuple[bool, list[dict], list[dict]]: valid indicator, errors and warnings
@@ -532,7 +544,8 @@ def validate_prediction_log(
             )
             return False, errors, warnings
 
-        missing = required.keys() - prediction_log.keys()
+        # top-level keys
+        missing = schema.keys() - prediction_log.keys()
         if len(missing) > 0:
             errors.append(
                 ValidationItem(
@@ -545,115 +558,108 @@ def validate_prediction_log(
         for key, data in prediction_log.items():
             # different cases for data being a list or another dict
             if key == "GeneratedBy":
-                if not isinstance(data, dict):
+                if not isinstance(data, list):
                     errors.append(
                         ValidationItem(
                             code="INVALID_LOG_SCHEMA",
                             location=logfile,
-                            issueMessage=f"Data for {key} must be dict"
+                            issueMessage=f"Content for {key} must be list"
                         ).itemize()
                     )
-                else:
-                    for k, v in required[key].items():
-                        if not k in data.keys():
-                            errors.append(
-                                ValidationItem(
-                                    code="MISSING_LOG_REQUIREMENT",
-                                    location=logfile,
-                                    issueMessage=f"Please provide {k} in logfile for {key}"
-                                ).itemize()
-                            )
-                        elif not isinstance(data[k], v):
-                            errors.append(
-                                ValidationItem(
-                                    code="INVALID_DATATYPE_LOGFILE",
-                                    location=logfile,
-                                    issueMessage=f"Data type of {k} is expected to be {v}"
-                                ).itemize()
-                            )
-                        elif data[k] in ["", "n/a", None]:
-                            # code url is allowed to be empty
-                            if k in ["CodeURL", "Version", "Container"]:
-                                warnings.append(
-                                    ValidationItem(
-                                        code="EMPTY_LOG_REQUIREMENT",
-                                        location=logfile,
-                                        issueMessage=f"Value for {k} is empty or not provided",
-                                        severity="warning"
-                                    ).itemize()
-                                )
-                            else:
-                                errors.append(
-                                    ValidationItem(
-                                        code="EMPTY_LOG_REQUIREMENT",
-                                        location=logfile,
-                                        issueMessage=f"Value for {k} is required, but empty or not provided"
-                                    ).itemize()
-                                )
-                    
-            elif key == "Environment":
-                if not isinstance(data, dict):
+                elif not len(data) > 0:
                     errors.append(
                         ValidationItem(
-                            code="INVALID_LOG_SCHEMA",
+                            code="EMPTY_LOG_REQUIREMENT",
                             location=logfile,
-                            issueMessage=f"Data for {key} must be dict"
+                            issueMessage=f"No entries for {key}"
                         ).itemize()
                     )
                 else:
-                    for k, v in required[key].items():
-                        if not k in data.keys():
-                            errors.append(
-                                ValidationItem(
-                                    code="MISSING_LOG_REQUIREMENT",
-                                    location=logfile,
-                                    issueMessage=f"Please provide {k} in logfile for {key}"
-                                ).itemize()
-                            )
-                        elif not isinstance(data[k], v):
-                            errors.append(
-                                ValidationItem(
-                                    code="INVALID_DATATYPE_LOGFILE",
-                                    location=logfile,
-                                    issueMessage=f"Data type of {k} is expected to be {v}"
-                                ).itemize()
-                            )
-                        else:
-                            if k == "CPU" and data[k] in ["", "n/a"]:
+                    for i in range(len(data)):
+                        generated_by: dict = data[i]
+                        for k, v in schema[key].items():
+                            if not k in generated_by.keys():
+                                if schema[key][k]["required"]:
+                                    errors.append(
+                                        ValidationItem(
+                                            code="MISSING_LOG_REQUIREMENT",
+                                            location=logfile,
+                                            issueMessage=f"Please provide {k} in logfile for {key} at index {i}"
+                                        ).itemize()
+                                    )
+                                else:
+                                    warnings.append(
+                                        ValidationItem(
+                                            code="MISSING_LOG_REQUIREMENT",
+                                            location=logfile,
+                                            issueMessage=f"It is recommended to provide {k} in logfile for {key} at index {i}",
+                                            severity="warning"
+                                        ).itemize()
+                                    )
+                            elif not isinstance(generated_by[k], v["type"]):
                                 errors.append(
                                     ValidationItem(
-                                        code="EMPTY_LOG_REQUIREMENT",
+                                        code="INVALID_DATATYPE_LOGFILE",
                                         location=logfile,
-                                        issueMessage=f"Value for {k} is required, but empty or not provided"
+                                        issueMessage=f"Data type of {k} is expected to be {v["type"]} for {key} at index {i}"
                                     ).itemize()
                                 )
-                            elif k == "RAM" and (not np.isclose(data[k] % 8, 0) or data[k] <= 0):
-                                warnings.append(
-                                    ValidationItem(
-                                        code="RAM_NOT_PLAUSIBLE",
-                                        location=logfile,
-                                        severity="warning",
-                                        issueMessage=f"Please check provided RAM value: {data[k]}"
-                                    ).itemize()
-                                )                        
+                            elif generated_by[k] in ["", "n/a", None]:
+                                # code url is allowed to be empty
+                                required: bool = schema[key][k]["required"]
+                                if required:
+                                    errors.append(
+                                        ValidationItem(
+                                            code="EMPTY_LOG_REQUIREMENT",
+                                            location=logfile,
+                                            issueMessage=f"Value for {k} required, but empty or not provided, for {key} at index {i}",
+                                        ).itemize()
+                                    )
+                                else:
+                                    warnings.append(
+                                        ValidationItem(
+                                            code="EMPTY_LOG_REQUIREMENT",
+                                            location=logfile,
+                                            issueMessage=f"Value for {k} is empty or not provided, for {key} at index {i}",
+                                            severity="warning"
+                                        ).itemize()
+                                    )                    
             
-            elif key == "Runtime":
-                if not isinstance(data, required[key]):
+            elif key == "Execution":
+                if not isinstance(data, schema[key]):
                     errors.append(
                         ValidationItem(
                             code="INVALID_DATATYPE_LOGFILE",
                             location=logfile,
-                            issueMessage=f"Data type of {key} is expected to be {required[key]}"
+                            issueMessage=f"Data type of {key} is expected to be {schema[key]["type"]}"
                         ).itemize()
                     )
-                elif not data > 0.:
+                elif not "Runtime" in data.keys():
                     errors.append(
                         ValidationItem(
-                            code="INVALID_RUNTIME_ENTRY",
+                            code="MISSING_LOG_REQUIREMENT",
                             location=logfile,
-                            issueMessage=f"{key} must be > 0."
-                        ).itemize()
+                            issueMessage=f"Runtime: float needs to be specified in {key}"
+                        )
                     )
+                else:
+                    runtime: Any = data["Runtime"]
+                    if not isinstance(runtime, float):
+                        errors.append(
+                            ValidationItem(
+                                code="INVALID_DATATYPE_LOGFILE",
+                                location=logfile,
+                                issueMessage=f"Data type of Runtime is expected to be float"
+                            ).itemize()
+                        )
+                    elif not runtime > 0.:
+                        errors.append(
+                            ValidationItem(
+                                code="INVALID_RUNTIME_ENTRY",
+                                location=logfile,
+                                issueMessage=f"Runtime must be > 0."
+                            ).itemize()
+                        )
 
     valid: bool = len(errors) == 0
 

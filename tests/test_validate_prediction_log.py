@@ -27,14 +27,16 @@ def test_missing_key():
     prediction: str = "tests/testdata/prediction_logs/invalid_missing_key_events.tsv"
 
     valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    print(errors)
     assert valid is False
-    assert len(errors) == 1
-    assert len(warnings) == 2
+    assert len(errors) == 2
 
     assert errors[0].get("code", "") == "MISSING_LOG_REQUIREMENT"
 
     message: str = errors[0].get("issueMessage", "")
-    assert "Runtime" in message and "Environment" in message and not "RandomKey" in message
+    assert "Execution" in message and "Environment" in message and not "RandomKey" in message
+
+    assert errors[1].get("code", "") == "INVALID_LOG_SCHEMA"
 
 
 def test_invalid_generatedby():
@@ -42,7 +44,7 @@ def test_invalid_generatedby():
 
     valid, errors, warnings = validate_prediction_log(prediction=prediction)
     assert valid is False
-    assert len(errors) == 3
+    assert len(errors) == 4
     assert len(warnings) == 2
 
     expected_err_codes = [
@@ -77,19 +79,15 @@ def test_invalid_environment():
 
     valid, errors, warnings = validate_prediction_log(prediction=prediction)
     assert valid is False
-    assert len(errors) == 2
-    assert len(warnings) == 1
-
-    assert warnings[0].get("code", "") == "RAM_NOT_PLAUSIBLE"
-
+    assert len(errors) == 1
     expected_errs: list[str] = [
-        "EMPTY_LOG_REQUIREMENT",
-        "INVALID_DATATYPE_LOGFILE"
+        "MISSING_LOG_REQUIREMENT",
     ]
 
     assert all(
         [err_code["code"] in expected_errs for err_code in errors]
     )
+    assert "Environment" in errors[0].get("issueMessage", "")
 
 
 def test_complete_logfile():
@@ -99,6 +97,6 @@ def test_complete_logfile():
     print(errors)
     print(warnings)
     assert valid is False
-    assert len(errors) == 4
+    assert len(errors) == 5
     assert len(warnings) == 2
     

@@ -68,6 +68,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         return universal_metrics
     
+    @property
+    def valid(self):
+        return len(self.errors) == 0
+    
     def _to_json(self, data: dict, path: str) -> None:
         """
         Helper function to save data as json file
@@ -96,9 +100,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         Args:
             path (str): output directory
         """
-        filename: str = os.path.join(path, "scores.json")
-        self._to_json(self.metrics, filename)
+        if self.valid:
+            # invalid submissions should not be on the leaderboard
+            filename: str = os.path.join(path, "scores.json")
+            self._to_json(self.metrics, filename)
 
+        # also invalid submissions can be scored
         table_path: str = os.path.join(path, "motor_unit_details")
         if not os.path.exists(table_path):
             os.makedirs(table_path)
@@ -214,12 +221,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             if label_file.endswith(".json"):
                 continue
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
-            # TODO
             recording: str = os.path.join(self.recording_path, f"{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}")
 
             # TODO
             # assumes predictions and label files are named equally, except for desc-label
-            prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposed"))
+            prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposition"))
             # check if there exists an according prediction
             if not os.path.exists(prediction):
                 self.warnings.append(
