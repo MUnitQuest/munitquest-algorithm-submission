@@ -150,6 +150,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 "step": "fit_from_spikes"
             },
             {
+                "step": "get_discharge_metric",
+                "metric": "cod_isi"
+            },
+            {
                 "step": "bad_source_detection",
                 "quality_metric": "sil",
                 "threshold": 0.9,
@@ -197,7 +201,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             },
             {
                 "step": "validate_prediction"
-            }
+            },
+            {
+                "step": "get_discharge_metric",
+                "metric": "cod_isi"
+            },
         ]
 
         cfg: ScoringConfig = ScoringConfig(

@@ -56,8 +56,8 @@ class ScoringConfig:
     ground_truth: Optional[str] 
     signal_metrics: bool = field(default=True) 
     sil_bins: list = field(default_factory=lambda: [0.9, 0.925, 0.95]) 
-    pnr_bins: list = field(default_factory=lambda: [30, 35, 40])
-    cov_bins: list = field(default_factory=lambda: [0.1, 0.15, 0.2, 0.35, 0.4, 0.5])
+    pnr_bins: list = field(default_factory=lambda: [30, 33.9, 37.1])
+    cod_bins: list = field(default_factory=lambda: [0.092, 0.197, 0.372, 0.730])
 
 
 @dataclass
@@ -125,7 +125,7 @@ class MUnitQuestScoring:
         self.data = cfg.data
         self.sil_bins = cfg.sil_bins
         self.pnr_bins = cfg.pnr_bins
-        self.cov_bins = cfg.cov_bins
+        self.cod_bins = cfg.cod_bins
         self.signal_metrics = cfg.signal_metrics
 
         self.score: float = 0
@@ -222,10 +222,10 @@ class MUnitQuestScoring:
             # Calculate source-based scores
             df["sil_map"] = df["sil"].apply(lambda x: self._map_sil(x))
             df["pnr_map"] = df["pnr"].apply(lambda x: self._map_pnr(x))
-            df["cov_map"] = df["cov_isi"].apply(lambda x: self._map_cov_isi(x))
+            df["cod_map"] = df["cod_isi"].apply(lambda x: self._map_cod_isi(x))
 
             df["metric_score"] = 1/3 * (
-                df["sil_map"] + df["pnr_map"] + df["cov_map"]
+                df["sil_map"] + df["pnr_map"] + df["cod_map"]
             )
 
             good = df[df["status"] == "good"]
@@ -284,21 +284,17 @@ class MUnitQuestScoring:
 
         return score
 
-    def _map_cov_isi(self, cov_isi):
+    def _map_cod_isi(self, cod_isi):
         """Map CoV-ISI score"""
 
-        if cov_isi < self.cov_bins[0]:
+        if cod_isi < self.cod_bins[0]:
             score = 0
-        elif cov_isi < self.cov_bins[1]:
-            score = 0.5
-        elif cov_isi < self.cov_bins[2]:
+        elif cod_isi < self.cod_bins[1]:
+            score = 1
+        elif cod_isi < self.cod_bins[2]:
             score = 0.75
-        elif cov_isi < self.cov_bins[3]:
-            score = 1    
-        elif cov_isi < self.cov_bins[4]:
-            score = 0.75
-        elif cov_isi < self.cov_bins[5]:
-            score = 0.5 
+        elif cod_isi < self.cod_bins[3]:
+            score = 0.5   
         else:
             score = 0   
 
