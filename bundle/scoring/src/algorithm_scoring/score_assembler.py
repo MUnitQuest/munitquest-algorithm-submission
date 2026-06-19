@@ -45,7 +45,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             mode (str): inidicates isometric or dynamic scoring
         """
         self.prediction_path = prediction_path
-        self.ground_truth_path = data_path + f"groundtruth-{mode}"
+        self.ground_truth_path = os.path.join(data_path, f"groundtruth-{mode}")
         self.mode = mode
 
         self.recording_path: str = data_path
@@ -58,6 +58,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         self.reporter: AlgorithmSubmissionReport | None = None
         self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+
+        self.n_labelfiles: int | None = None
     
     @property
     def metrics(self) -> dict:
@@ -70,7 +72,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         if not self.valid:
             for col in metric_df.columns:
                 metric_df[col] = 0.
-        universal_metrics: dict = metric_df.mean().to_dict()
+        universal_metrics: dict = (metric_df.mean()).to_dict()
+        
+        n: int = self.n_labelfiles if self.n_labelfiles > 0 else 100
+        universal_metrics["score"] = metric_df["score"].sum() / n
 
         return universal_metrics
     
@@ -239,6 +244,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
     def run(self, **kwargs) -> None:
         """ orchestrates scoring """
         label_files: list[str] = sorted([f for f in os.listdir(self.ground_truth_path) if f.endswith("_events.tsv")])
+        self.n_labelfiles = len(label_files)
+
         for label_file in label_files:
             # get ground-truth path
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
