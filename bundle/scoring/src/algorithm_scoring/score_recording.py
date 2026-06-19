@@ -217,7 +217,15 @@ class MUnitQuestScoring:
             df.loc[mask, "status_description"] = "Unmachted source"
             self.unit_metrics = df
 
-        else:    
+        else: 
+
+            # Reject units below the SIL threshold (0.9 threshold from CEDE)
+            df.loc[
+                df["sil"] < 0.9, "status"
+            ] = "masked"
+            df.loc[
+                df["sil"] < 0.9, "status_description"
+            ] = "Below a SIL threshold of 0.9"   
 
             # Calculate source-based scores
             df["sil_map"] = df["sil"].apply(lambda x: self._map_sil(x))
