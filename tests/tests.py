@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from ..bundle.scoring.isometric.scoring import ScoringConfig, MUnitQuestScoring
+from algorithm_scoring.score_recording import ScoringConfig, MUnitQuestScoring
 
 def test_spike_based_scoring():
 
@@ -16,17 +16,17 @@ def test_spike_based_scoring():
         {
             "step": "validate_prediction"
         }
-]
+    ]
 
     cfg = ScoringConfig(
         fsamp=2048,
         steps=steps,
         data=None,
-        ground_truth="./testdata/example_reference.tsv",
+        ground_truth="tests/testdata/example_reference.tsv",
         signal_metrics=False
     )
 
-    prediction = "./testdata/example_prediction.tsv"
+    prediction = "tests/testdata/example_prediction.tsv"
     scorer = MUnitQuestScoring(prediction=prediction, cfg=cfg)
     scorer.validate()
     scorer.get_score()
@@ -48,8 +48,8 @@ def test_signal_based_scoring():
         {
             "step": "validate_prediction"
         },
-            {
-        "step": "fit_from_spikes"
+        {
+            "step": "fit_from_spikes"
         },
         {
             "step": "bad_source_detection",
@@ -58,23 +58,21 @@ def test_signal_based_scoring():
             "min_spikes": 10,
             "mode": "below"
         } 
-]
+    ]
 
     cfg = ScoringConfig(
         fsamp=2048,
         steps=steps,
-        data="./testdata/example_emg.edf",
-        ground_truth="./testdata/example_reference.tsv",
+        data="tests/testdata/example_emg.edf",
+        ground_truth="tests/testdata/example_reference.tsv",
         signal_metrics=True
     )
 
-    prediction = "./testdata/example_prediction.tsv"
+    prediction = "tests/testdata/example_prediction.tsv"
     scorer = MUnitQuestScoring(prediction=prediction, cfg=cfg)
     scorer.validate()
     scorer.get_score()
 
     assert np.isclose(scorer.score, 11.060158277942975), (
         "Your does not match the expected value"
-    )    
-
-    
+    )  

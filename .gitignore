@@ -1,2 +1,12 @@
 *.zip
 *.txt
+*__pycache__/
+*egg*
+.vscode/
+familiarisation-dataset-demo/
+out/
+demo/
+data/
+submissions/
+bookkeeping.csv
+predictions/

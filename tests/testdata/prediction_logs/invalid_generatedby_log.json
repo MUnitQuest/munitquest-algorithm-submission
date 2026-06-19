@@ -1,0 +1,27 @@
+{
+    "GeneratedBy": [
+        {
+            "Name": "",
+            "Description": null,
+            "Version": "",
+            "Container": null
+        },
+        {
+            "Name": "MUnitQuest Tutorials",
+            "Description": "Tutorial notebook to decompose a recording from the MUnitQuest Algorithm Challenge - Isometric Task.",
+            "CodeURL": "https://github.com/MUnitQuest/MUnitQuest_tutorials/tree/main/notebooks/01_familiarisation_isometric.ipynb",
+            "License": "Open Source",
+            "Version": "0.1.1",
+            "Container": "local"
+        }
+    ],
+    "Execution": {
+        "Runtime": 50.45,
+        "Timing": {}
+    },    
+    "Environment": {
+        "CPU": "arm",
+        "GPU": [],
+        "RAM": 32
+    }
+}
