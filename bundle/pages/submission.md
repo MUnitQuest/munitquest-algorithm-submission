@@ -74,11 +74,11 @@ Here is a minimal example of the format ([BIDS-event file](https://bids-specific
 codabench platform enforces all submissions to be a .zip archive.<br/>**Important**: Ensure that event-files are located at the root-directory of the zip-Archive
 ```
 exampleSubmission.zip
-├── sub-01_exampleRecordingName_events.tsv
-├── sub-01_exampleRecordingName_log.json
+├── recording-001_challenge-Isometric_desc-decomposed_events.tsv
+├── recording-001_challenge-Isometric_desc-decomposed_log.json
 ├── ...
-├── sub-0N_exampleRecordingName_events.tsv
-└── sub-0N_exampleRecordingName_log.json
+├── recording-100_challenge-Isometric_desc-decomposed_events.tsv
+└── recording-100_challenge-Isometric_desc-decomposed_log.json
 ```
 
 ## Further Information
