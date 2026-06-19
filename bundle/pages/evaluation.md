@@ -1,5 +1,6 @@
 # Evaluation
 
+## Scoring
 For the scoring, we perform the following steps:
 
 - ``(1) Remove duplicate spike trains:`` A duplicate motor unit is detected if two spike trains share at minimum 30 percent of common spikes. In the case of duplicates, we will keep the first unit and reject all other units.
@@ -16,6 +17,13 @@ For all isometric recordings with incomplete labels, we additionally perform the
  
 The ``recording score`` is the label-based score plus (if the labels are incomplete) the model-based score. Finally, the ``submission score`` is the average of the ``recording scores`` for the respective task (missing prediction files yield a ``recording score`` of zero).
 
+## Validation
+In addition to the calculation of metrics assessing the quality of predictions, each prediction is validated towards the correct submission format. Only valid predictions receive a leaderboard-effective score. Nevertheless, each evaluable prediction is scored to provide some insights regardless of the prediction's validity in terms of submission format.
 
-*for transparency, the code of the score function evaluating the submissions is shared<br/>
-<br/>For more information, please refer to https://munitquest.github.io/algorithm-challenge/
+**Hint**: Validity of the submission-format can be checked pre-submission, using our provided walkthroughs
+- [01_familiarisation_isometric.ipynb](https://github.com/MUnitQuest/MUnitQuest_tutorials/blob/main/algorithm_challenge_tutorials/01_familiarisation_isometric.ipynb)
+- [02_familiarisation_dynamic.ipynb](https://github.com/MUnitQuest/MUnitQuest_tutorials/blob/main/algorithm_challenge_tutorials/02_familiarisation_dynamic.ipynb)
+
+## Further Information
+*for transparency the code of the score function evaluating the submissions is shared: https://github.com/MUnitQuest/munitquest-algorithm-submission*<br/>
+<br/>For more information please refer to https://munitquest.github.io/algorithm-challenge/
