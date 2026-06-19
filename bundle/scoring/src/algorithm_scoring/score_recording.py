@@ -57,7 +57,7 @@ class ScoringConfig:
     signal_metrics: bool = field(default=True) 
     sil_bins: list = field(default_factory=lambda: [0.9, 0.925, 0.95]) 
     pnr_bins: list = field(default_factory=lambda: [30, 33.9, 37.1])
-    cod_bins: list = field(default_factory=lambda: [0.092, 0.197, 0.372, 0.730])
+    cod_bins: list = field(default_factory=lambda: [0.05, 0.197, 0.372, 0.730])
 
 
 @dataclass
@@ -150,7 +150,9 @@ class MUnitQuestScoring:
 
         """
         valid_tsv, errors_tsv, warnings_tsv = validate_prediction_file(self.prediction)
-        valid_json, errors_json, warnings_json = validate_prediction_log(self.prediction)
+
+        logfile: str = self.prediction.replace("events.tsv", "log.json")
+        valid_json, errors_json, warnings_json = validate_prediction_log(logfile)
         
         self.valid = valid_tsv and valid_json
         self.errors += errors_tsv + errors_json
@@ -180,7 +182,7 @@ class MUnitQuestScoring:
 
         # Apply configured post processing pipeline
         model = PostProcessCBSS(steps=self.steps)
-        _, _, _, metadata = model.post_process(
+        _, _, scores, metadata = model.post_process(
             data=data,
             spikes=spikes,
             fsamp=self.fsamp,
@@ -246,7 +248,7 @@ class MUnitQuestScoring:
                 "f1_mean": matched["F1"].mean(),
                 "sil_mean": good["sil"].mean(),
                 "pnr_mean": good["pnr"].mean(),
-                "cov_isi_mean": good["cov_isi"].mean(),
+                "cod_isi_mean": good["cod_isi"].mean(),
                 "rejected_units": len(rejected),
             }
 
@@ -360,9 +362,9 @@ def validate_prediction_file(
     if missing:
         errors.append(
             ValidationItem(
-                    code="MISSING_EVENT_COLUMN",
-                    location=file,
-                    issueMessage=f"Missing required columns: {sorted(missing)}"
+                code="MISSING_EVENT_COLUMN",
+                location=file,
+                issueMessage=f"Missing required columns: {sorted(missing)}"
             ).itemize()
         )
 
@@ -467,7 +469,7 @@ def validate_prediction_file(
 
 
 def validate_prediction_log(
-        prediction: str,
+        logfile: str,
         schema: dict={
             "GeneratedBy": {
                 "Name": {
@@ -495,7 +497,7 @@ def validate_prediction_log(
                     "type": str | None
                 }
             },
-            "Environment": dict,
+            "RuntimeEnvironment": dict,
             "Execution": dict
         }
     ) -> tuple[bool, list[dict], list[dict]]:
@@ -514,14 +516,13 @@ def validate_prediction_log(
     errors: list[dict] = []
     warnings: list[dict] = []
 
-    logfile: str = prediction.replace("events.tsv", "log.json")
-
     if not os.path.exists(logfile):
+        prediction_path: str = logfile.replace("log.json", "events.tsv")
         errors.append(
             ValidationItem(
                 code="MISSING_LOGFILE_FOR_PREDICTION",
-                location=prediction,
-                issueMessage=f"Logfile missing for prediction: {prediction}. Please provide a logfile {logfile}"
+                location=prediction_path,
+                issueMessage=f"Logfile missing for prediction: {prediction_path}. Please provide a logfile {logfile}"
             ).itemize()
         )
 

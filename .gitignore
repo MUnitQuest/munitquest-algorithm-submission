@@ -8,3 +8,5 @@ out/
 demo/
 data/
 submissions/
+bookkeeping.csv
+predictions/

@@ -5,9 +5,9 @@ from algorithm_scoring.score_recording import validate_prediction_log
 
 
 def test_valid():
-    prediction: str = "tests/testdata/prediction_logs/valid_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/valid_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     print(errors)
     assert valid is True
     assert len(errors) == 0
@@ -15,18 +15,18 @@ def test_valid():
 
 
 def test_missing_file():
-    prediction: str = "tests/testdata/prediction_logs/missing_log_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/missing_log_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     assert valid is False
     assert len(errors) == 1
     assert errors[0]["code"] == "MISSING_LOGFILE_FOR_PREDICTION"
 
 
 def test_missing_key():
-    prediction: str = "tests/testdata/prediction_logs/invalid_missing_key_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/invalid_missing_key_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     print(errors)
     assert valid is False
     assert len(errors) == 2
@@ -40,9 +40,9 @@ def test_missing_key():
 
 
 def test_invalid_generatedby():
-    prediction: str = "tests/testdata/prediction_logs/invalid_generatedby_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/invalid_generatedby_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     assert valid is False
     assert len(errors) == 4
     assert len(warnings) == 2
@@ -65,9 +65,9 @@ def test_invalid_generatedby():
 
 
 def test_invalid_duration():
-    prediction: str = "tests/testdata/prediction_logs/invalid_duration_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/invalid_duration_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     assert valid is False
     assert len(errors) == 1
     assert errors[0].get("code", "") == "INVALID_RUNTIME_ENTRY"
@@ -75,9 +75,9 @@ def test_invalid_duration():
 
 
 def test_invalid_environment():
-    prediction: str = "tests/testdata/prediction_logs/invalid_env_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/invalid_env_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     assert valid is False
     assert len(errors) == 1
     expected_errs: list[str] = [
@@ -91,9 +91,9 @@ def test_invalid_environment():
 
 
 def test_complete_logfile():
-    prediction: str = "tests/testdata/prediction_logs/invalid_multi_events.tsv"
+    logfile: str = "tests/testdata/prediction_logs/invalid_multi_log.json"
 
-    valid, errors, warnings = validate_prediction_log(prediction=prediction)
+    valid, errors, warnings = validate_prediction_log(logfile=logfile)
     print(errors)
     print(warnings)
     assert valid is False
