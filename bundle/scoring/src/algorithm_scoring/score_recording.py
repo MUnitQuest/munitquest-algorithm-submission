@@ -221,13 +221,30 @@ class MUnitQuestScoring:
 
         else: 
 
-            # Reject units below the SIL threshold (0.9 threshold from CEDE)
+            # Reject unmatched units below a SIL threshold (0.9 from CEDE)
             df.loc[
-                df["sil"] < 0.9, "status"
+                (df["sil"] < 0.9) &
+                (df["unit_id_ref"].isna()), 
+                "status"
             ] = "masked"
             df.loc[
-                df["sil"] < 0.9, "status_description"
-            ] = "Below a SIL threshold of 0.9"   
+                (df["sil"] < 0.9) &
+                (df["unit_id_ref"].isna()), 
+                "status_description"
+            ] = "Unmatched source below a SIL threshold of 0.9"  
+
+            # Reject unmatched units with less than 10 spikes
+            df["n_pred_spikes"] = df["TP"] + df["FP"] 
+            df.loc[
+                (df["n_pred_spikes"] < 10) &
+                (df["unit_id_ref"].isna()), 
+                "status"
+            ] = "masked"
+            df.loc[
+                (df["n_pred_spikes"] < 10) &
+                (df["unit_id_ref"].isna()), 
+                "status_description"
+            ] = "Unmtached source with less than 10 spikes"  
 
             # Calculate source-based scores
             df["sil_map"] = df["sil"].apply(lambda x: self._map_sil(x))
