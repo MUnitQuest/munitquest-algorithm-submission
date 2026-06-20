@@ -2,7 +2,7 @@
 This competition is result-submission only. Please upload BIDS-event files reporting motor unit spike trains for each provided recording.
 
 ## Algorithm Submission
-This is a prediction submission competition. During both the **Familiarization Phase** and the **Showdown Phase**, you will be asked to upload, for each recording, a tabular file (`recordingName_events.tsv`) containing your predicted motor unit spikes (BIDS-events file) together with a log file (`recordingName_log.json`) describing essential process metadata (further details to be announced). Submissions apply to both tasks (**Isometric** and **Dynamic**) independently. To be eligible for awards, you need to share your code openly (e.g., on GitHub) upon the completion of the competition.
+This is a prediction submission competition. During both the **Familiarization Phase** and the **Showdown Phase**, you will be asked to upload, for each recording, a tabular file (`recording-<rec_label>_challenge-<challenge_label>_desc-decomposed_events.tsv`) containing your predicted motor unit spikes (BIDS-events file) together with a log file (`recording-<rec_label>_challenge-<challenge_label>_desc-decomposed_log.json`) describing essential process metadata (further details to be announced). Submissions apply to both tasks (**Isometric** and **Dynamic**) independently. To be eligible for awards, you need to share your code openly (e.g., on GitHub) upon the completion of the competition.
 
 ## Result File Formats
 Here is a minimal example of the format ([BIDS-event file](https://bids-specification.readthedocs.io/en/stable/modality-agnostic-files/events.html)) used for submitting motor unit spike trains
@@ -74,11 +74,11 @@ Here is a minimal example of the format ([BIDS-event file](https://bids-specific
 codabench platform enforces all submissions to be a .zip archive.<br/>**Important**: Ensure that event-files are located at the root-directory of the zip-Archive
 ```
 exampleSubmission.zip
-├── sub-01_exampleRecordingName_events.tsv
-├── sub-01_exampleRecordingName_log.json
+├── recording-001_challenge-Isometric_desc-decomposed_events.tsv
+├── recording-001_challenge-Isometric_desc-decomposed_log.json
 ├── ...
-├── sub-0N_exampleRecordingName_events.tsv
-└── sub-0N_exampleRecordingName_log.json
+├── recording-100_challenge-Isometric_desc-decomposed_events.tsv
+└── recording-100_challenge-Isometric_desc-decomposed_log.json
 ```
 
 ## Further Information
