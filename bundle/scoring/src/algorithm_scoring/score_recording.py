@@ -167,6 +167,11 @@ class MUnitQuestScoring:
         # Read data
         spikes = pd.read_table(self.prediction)
 
+        # Make sure to only score "motor-unit-spike" events
+        spikes = spikes[
+            spikes["description"] == "motor-unit-spike"
+        ]
+
         if isinstance(self.ground_truth, str):
             ground_truth = pd.read_table(self.ground_truth)
         else:
