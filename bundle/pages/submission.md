@@ -14,7 +14,7 @@ Here is a minimal example of the format ([BIDS-event file](https://bids-specific
       <th style="width: 20%;">duration</th>
       <th style="width: 20%;">sample</th>
       <th style="width: 20%;">unit_id</th>
-      <th style="width: 20%;">description</th>
+      <th style="width: 20%;">event_type</th>
     </tr>
   </thead>
 
@@ -68,7 +68,11 @@ Here is a minimal example of the format ([BIDS-event file](https://bids-specific
 - *duration*: Duration of the event (measured from onset) in seconds. As a motor unit spike can be regarded as a Dirac impulse, its duration is zero.  
 - *sample*: Sample index of the event onset (zero-indexing).
 - *unit_id*: Unique identifier (integer value) of the motor unit corresponding to the detected spike.
-- *description*: Human-readable free-text description of the event.
+- *event_type*: Unique event-type classifier. For a motor unit discharge use the label “motor-unit-spike”.
+
+>[!NOTE]
+>If you do manual post-processing, we encourage using an additional column curation_status (optional), and assigning each event a label such as “accepted-spike”, “rejected-spike”, or “added-spike”. For rejected spikes, change the event_type to a label such as “artifact-spike” or “misc” (the scoring function will only
+consider events that have the label “motor-unit-spike”).
 
 ## Submission Format
 codabench platform enforces all submissions to be a .zip archive.<br/>**Important**: Ensure that event-files are located at the root-directory of the zip-Archive

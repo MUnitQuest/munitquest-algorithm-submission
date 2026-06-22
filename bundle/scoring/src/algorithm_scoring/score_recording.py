@@ -167,6 +167,11 @@ class MUnitQuestScoring:
         # Read data
         spikes = pd.read_table(self.prediction)
 
+        # Make sure to only score "motor-unit-spike" events
+        spikes = spikes[
+            spikes["event_type"] == "motor-unit-spike"
+        ]
+
         if isinstance(self.ground_truth, str):
             ground_truth = pd.read_table(self.ground_truth)
         else:
@@ -182,7 +187,7 @@ class MUnitQuestScoring:
 
         # Apply configured post processing pipeline
         model = PostProcessCBSS(steps=self.steps)
-        _, _, scores, metadata = model.post_process(
+        _, _, _, metadata = model.post_process(
             data=data,
             spikes=spikes,
             fsamp=self.fsamp,
@@ -339,7 +344,7 @@ def validate_prediction_file(
     - duration    : must be 0
     - sample      : integer
     - unit_id     : integer
-    - description : must include "motor-unit-spike"
+    - event_type  : must include columns with the label "motor-unit-spike"
 
     Args
     ----
@@ -365,7 +370,7 @@ def validate_prediction_file(
         "duration",
         "sample",
         "unit_id",
-        "description",
+        "event_type",
     }
 
     # Load the file
@@ -398,14 +403,14 @@ def validate_prediction_file(
 
 
     # Check if the file includes motor unit spike events
-    mu_df = df[df["description"] == "motor-unit-spike"]
+    mu_df = df[df["event_type"] == "motor-unit-spike"]
 
     if len(mu_df) == 0:
         errors.append(
             ValidationItem(
                 code="MISSING_MU_SPIKE_EVENTS",
                 location=file,
-                issueMessage="motor-unit-spike missing in event description column"
+                issueMessage="motor-unit-spike missing in event_type column"
             ).itemize()
         )
         return False, errors, warnings
