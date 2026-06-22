@@ -20,7 +20,7 @@ def test_invalid_columns():
     assert errors[0].get("code", "") == "MISSING_EVENT_COLUMN"
     
     message: str = errors[0].get("issueMessage", "")
-    assert message == "Missing required columns: ['description', 'duration']"
+    assert message == "Missing required columns: ['duration', 'event_type']"
 
 
 def test_invalid_description():
