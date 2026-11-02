@@ -45,7 +45,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             mode (str): inidicates isometric or dynamic scoring
         """
         self.prediction_path = prediction_path
-        self.ground_truth_path = os.path.join(data_path, f"groundtruth-{mode}")
+        if mode == "isometric":
+            self.ground_truth_path = os.path.join(data_path, f"{mode}_labels")
+        elif mode == "dynamic":
+            self.ground_truth_path = os.path.join(data_path, "groundtruth")
         self.mode = mode
 
         self.recording_path: str = data_path
@@ -57,7 +60,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.unit_metrics: dict[str, pd.DataFrame] = {}
 
         self.reporter: AlgorithmSubmissionReport | None = None
-        self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+
+        if self.mode == "dynamic":
+            self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+        elif self.mode == "isometric":
+            self.book: pd.DataFrame = pd.read_csv(os.path.join(self.ground_truth_path, "key.tsv"), delimiter="\t")
 
         self.n_labelfiles: int | None = None
     
@@ -110,10 +117,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             bool: whether to do signal-based scoring or sike-based
         """
         full_labels: bool = True
-        if recording in list(self.book["newname"]):
-            full_labels = self.book["full_labels"].loc[
-                self.book["newname"] == recording
-            ].item()
+        if self.mode == "dynamic":
+            if recording in list(self.book["newname"].loc[self.book["type"] == "experimental"]):
+                full_labels = False
+        elif self.mode == "isometric":
+            if recording in list(self.book["recording"].loc[self.book["type"] == "experimental"]):
+                full_labels = False
         return full_labels
     
     def export(self, path: str, export_mudf: bool=True) -> None:
@@ -246,6 +255,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         label_files: list[str] = sorted([f for f in os.listdir(self.ground_truth_path) if f.endswith("_events.tsv")])
         self.n_labelfiles = len(label_files)
 
+        ground_truth_label: str = kwargs.get("ground_truth_label", "groundtruthspikes")
+
         for label_file in label_files:
             # get ground-truth path
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
@@ -254,11 +265,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             recording: str = os.path.join(
                 self.recording_path,
                 f"{recording_id}_challenge-{self.mode}",
-                f"{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}"
+                f"{label_file.replace(f"desc-{ground_truth_label}_events.tsv", "emg.edf")}"
             )
 
             # get prediction
-            prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposed"))
+            prediction: str = os.path.join(self.prediction_path, label_file.replace(ground_truth_label, "decomposed"))
             
             # check if there exists an according prediction
             if not os.path.exists(prediction):
@@ -287,15 +298,20 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             print(f"Scoring detected Motor Units\nPrediction: {prediction}\nRecording: {recording}\nLabelfile: {ground_truth}")
 
             # check if signal-based recording required
-            full_labels: bool = self._bookkeep(recording.split("/")[-1])
+            full_labels: bool = self._bookkeep(
+                recording=recording.split("/")[-1] if self.mode == "dynamic" else f"{recording_id}_challenge-{self.mode}"
+            )
 
             if not full_labels:
                 # get preprocessed recording
-                preprocessed_recording: str = os.path.join(
-                    self.recording_path,
-                    "preprocessed",
-                    f"{recording_id}_challenge-{self.mode}_desc-preProcessed_emg.edf"
-                )
+                # preprocessed_recording: str = os.path.join(
+                #     self.recording_path,
+                #     "preprocessed",
+                #     f"{recording_id}_challenge-{self.mode}_desc-preProcessed_emg.edf"
+                # )
+                
+                # remporarily use real recordings
+                preprocessed_recording: str = recording
 
                 metrics, errors, unit_metrics = self._score_signal_based(
                     prediction=prediction,

@@ -18,7 +18,8 @@ def main():
         mode=mode
     )
 
-    munitquest_scorer.run()
+    ground_truth_label = "groundtruthspikes" if mode == "dynamic" else "reference"
+    munitquest_scorer.run(ground_truth_label=ground_truth_label)
     munitquest_scorer.export(output_path)
 
 
