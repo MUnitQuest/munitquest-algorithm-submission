@@ -178,10 +178,13 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 "mode": "first"
             },
             {
-                "step": "validate_prediction"
+                "step": "validate_prediction",
+                # TODO t_start, t_end via scoring_start scoring_end in events.tsv
+                "threshold": 0.5
             },
             {
-                "step": "fit_from_spikes"
+                "step": "fit_from_spikes",
+                # TODO t_start, t_end via scoring_start scoring_end in events.tsv
             },
             {
                 "step": "get_discharge_metric",
@@ -227,7 +230,9 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 "mode": "first"
             },
             {
-                "step": "validate_prediction"
+                "step": "validate_prediction",
+                # TODO t_start, t_end via scoring_start scoring_end in events.tsv,
+                "threshold": 0.5
             },
             {
                 "step": "get_discharge_metric",
@@ -256,6 +261,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.n_labelfiles = len(label_files)
 
         ground_truth_label: str = kwargs.get("ground_truth_label", "groundtruthspikes")
+
+        # TODO dynamic fsamp
 
         for label_file in label_files:
             # get ground-truth path
@@ -304,14 +311,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
             if not full_labels:
                 # get preprocessed recording
-                # preprocessed_recording: str = os.path.join(
-                #     self.recording_path,
-                #     "preprocessed",
-                #     f"{recording_id}_challenge-{self.mode}_desc-preProcessed_emg.edf"
-                # )
-                
-                # remporarily use real recordings
-                preprocessed_recording: str = recording
+                preprocessed_recording: str = os.path.join(
+                    self.recording_path,
+                    "preprocessed",
+                    f"{recording_id}_challenge-{self.mode}_desc-preprocessed_emg.edf"
+                )
 
                 metrics, errors, unit_metrics = self._score_signal_based(
                     prediction=prediction,

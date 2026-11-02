@@ -54,7 +54,8 @@ class ScoringConfig:
     steps: list[dict] 
     data: Optional[str]
     ground_truth: Optional[str] 
-    signal_metrics: bool = field(default=True) 
+    signal_metrics: bool = field(default=True)
+    # TODO lower bound on bins .85 sil, 28 pnr
     sil_bins: list = field(default_factory=lambda: [0.9, 0.925, 0.95]) 
     pnr_bins: list = field(default_factory=lambda: [30, 33.9, 37.1])
     cod_bins: list = field(default_factory=lambda: [0.05, 0.197, 0.372, 0.730])
@@ -205,6 +206,8 @@ class MUnitQuestScoring:
             (df["unit_id_ref"].notna()) &
             (df["status"] == "good")
         ]
+        
+        # TODO threshold on F1 score for matched units
         self.score += matched["F1"].sum() 
 
         if not self.signal_metrics:
