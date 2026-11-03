@@ -153,9 +153,16 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         return None
 
-    @staticmethod
     @timer("Signal-based scoring took")
-    def _score_signal_based(prediction: str, ground_truth: str, recording: str) -> tuple[dict, list, pd.DataFrame]:
+    def _score_signal_based(
+            self,
+            prediction: str,
+            ground_truth: str,
+            recording: str,
+            t_start: float,
+            t_end: float,
+            fsamp: float
+        ) -> tuple[dict, list, pd.DataFrame]:
         """
         Signal based scoring in the case of incomplete labels. Therefore,
         the submitted event-table is directlyevaluated against the recording.
@@ -164,6 +171,9 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             prediction (str): filepath of events.tsv
             ground_truth (str): filepath of the ground truth (incomplete)
             recording (str): filepath of recording (edf, bdf, edf+, bdf+)
+            t_start (float): start of scoring window
+            t_end (float): end of scoring window
+            fsamp (float): sampling frequency
 
         Returns:
             tuple[dict, list, pd.DataFrame]: metrics of the scorer, list of validation errors,
@@ -179,12 +189,14 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             },
             {
                 "step": "validate_prediction",
-                # TODO t_start, t_end via scoring_start scoring_end in events.tsv
+                "t_start": t_start,
+                "t_end": t_end,
                 "threshold": 0.5
             },
             {
                 "step": "fit_from_spikes",
-                # TODO t_start, t_end via scoring_start scoring_end in events.tsv
+                "t_start": t_start,
+                "t_end": t_end,
             },
             {
                 "step": "get_discharge_metric",
@@ -193,7 +205,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         ]
 
         cfg: ScoringConfig = ScoringConfig(
-            fsamp=2048,
+            fsamp=fsamp,
             steps=steps,
             data=recording,
             ground_truth=ground_truth,
@@ -202,13 +214,18 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
-        scorer.get_score()
+        scorer.get_score(mode=self.mode, t_start=t_start, t_end=t_end)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
     
     @staticmethod
     @timer("Spike-train scoring took")
-    def _score_spike_trains(prediction: str, ground_truth: str) -> tuple[dict, list, pd.DataFrame]:
+    def _score_spike_trains(
+            prediction: str,
+            ground_truth: str,
+            t_start: float,
+            t_end: float
+        ) -> tuple[dict, list, pd.DataFrame]:
         """
         We absolutely know all the spike trains and MUs (synthetic data).
         Hence, we can directly evaluate the event-files.
@@ -216,6 +233,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         Args:
             prediction (str): filepath of predicted events.tsv
             ground_truth (str): filepath of the ground truth events.tsv
+            t_start (float): start of scoring window
+            t_end (float): end of scoring window
 
         Returns:
             tuple[dict, list, pd.DataFrame]: metrics of the scorer, list of validation errors,
@@ -231,7 +250,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             },
             {
                 "step": "validate_prediction",
-                # TODO t_start, t_end via scoring_start scoring_end in events.tsv,
+                "t_start": t_start,
+                "t_end": t_end,
                 "threshold": 0.5
             },
             {
@@ -262,8 +282,6 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         ground_truth_label: str = kwargs.get("ground_truth_label", "groundtruthspikes")
 
-        # TODO dynamic fsamp
-
         for label_file in label_files:
             # get ground-truth path
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
@@ -274,6 +292,17 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 f"{recording_id}_challenge-{self.mode}",
                 f"{label_file.replace(f"desc-{ground_truth_label}_events.tsv", "emg.edf")}"
             )
+
+            # get scoring times as processing parameter
+            events_file: str = recording.replace("_emg.edf", "_events.tsv")
+            events_df: pd.DataFrame = pd.read_table(events_file)
+            t_start: float = events_df["onset"].loc[events_df["event_type"] == "scoring_start"].values[0]
+            t_end: float = events_df["onset"].loc[events_df["event_type"] == "scoring_end"].values[0]
+
+            sidecar_file: str = recording.replace(".edf", ".json")
+            with open(sidecar_file, "r") as f:
+                sidecar: dict = json.load(f)
+            fsamp: float = sidecar["SamplingFrequency"]
 
             # get prediction
             prediction: str = os.path.join(self.prediction_path, label_file.replace(ground_truth_label, "decomposed"))
@@ -320,12 +349,17 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 metrics, errors, unit_metrics = self._score_signal_based(
                     prediction=prediction,
                     ground_truth=ground_truth,
-                    recording=preprocessed_recording
+                    recording=preprocessed_recording,
+                    t_start=t_start,
+                    t_end=t_end,
+                    fsamp=fsamp
                 )
             else:
                 metrics, errors, unit_metrics = self._score_spike_trains(
                     prediction=prediction,
-                    ground_truth=ground_truth
+                    ground_truth=ground_truth,
+                    t_start=t_start,
+                    t_end=t_end
                 )
             
             self.results[prediction] = metrics
