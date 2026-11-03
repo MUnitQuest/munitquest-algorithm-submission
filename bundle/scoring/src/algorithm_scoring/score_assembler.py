@@ -45,7 +45,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             mode (str): inidicates isometric or dynamic scoring
         """
         self.prediction_path = prediction_path
-        self.ground_truth_path = os.path.join(data_path, f"groundtruth-{mode}")
+        if mode == "isometric":
+            self.ground_truth_path = os.path.join(data_path, f"{mode}_labels")
+        elif mode == "dynamic":
+            self.ground_truth_path = os.path.join(data_path, "groundtruth")
         self.mode = mode
 
         self.recording_path: str = data_path
@@ -57,7 +60,11 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.unit_metrics: dict[str, pd.DataFrame] = {}
 
         self.reporter: AlgorithmSubmissionReport | None = None
-        self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+
+        if self.mode == "dynamic":
+            self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+        elif self.mode == "isometric":
+            self.book: pd.DataFrame = pd.read_csv(os.path.join(self.ground_truth_path, "key.tsv"), delimiter="\t")
 
         self.n_labelfiles: int | None = None
     
@@ -110,10 +117,12 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             bool: whether to do signal-based scoring or sike-based
         """
         full_labels: bool = True
-        if recording in list(self.book["newname"]):
-            full_labels = self.book["full_labels"].loc[
-                self.book["newname"] == recording
-            ].item()
+        if self.mode == "dynamic":
+            if recording in list(self.book["newname"].loc[self.book["type"] == "experimental"]):
+                full_labels = False
+        elif self.mode == "isometric":
+            if recording in list(self.book["recording"].loc[self.book["type"] == "experimental"]):
+                full_labels = False
         return full_labels
     
     def export(self, path: str, export_mudf: bool=True) -> None:
@@ -144,9 +153,16 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         return None
 
-    @staticmethod
     @timer("Signal-based scoring took")
-    def _score_signal_based(prediction: str, ground_truth: str, recording: str) -> tuple[dict, list, pd.DataFrame]:
+    def _score_signal_based(
+            self,
+            prediction: str,
+            ground_truth: str,
+            recording: str,
+            t_start: float,
+            t_end: float,
+            fsamp: float
+        ) -> tuple[dict, list, pd.DataFrame]:
         """
         Signal based scoring in the case of incomplete labels. Therefore,
         the submitted event-table is directlyevaluated against the recording.
@@ -155,6 +171,9 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             prediction (str): filepath of events.tsv
             ground_truth (str): filepath of the ground truth (incomplete)
             recording (str): filepath of recording (edf, bdf, edf+, bdf+)
+            t_start (float): start of scoring window
+            t_end (float): end of scoring window
+            fsamp (float): sampling frequency
 
         Returns:
             tuple[dict, list, pd.DataFrame]: metrics of the scorer, list of validation errors,
@@ -169,10 +188,15 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 "mode": "first"
             },
             {
-                "step": "validate_prediction"
+                "step": "validate_prediction",
+                "t_start": t_start,
+                "t_end": t_end,
+                "threshold": 0.5
             },
             {
-                "step": "fit_from_spikes"
+                "step": "fit_from_spikes",
+                "t_start": t_start,
+                "t_end": t_end,
             },
             {
                 "step": "get_discharge_metric",
@@ -181,7 +205,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         ]
 
         cfg: ScoringConfig = ScoringConfig(
-            fsamp=2048,
+            fsamp=fsamp,
             steps=steps,
             data=recording,
             ground_truth=ground_truth,
@@ -190,13 +214,18 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
 
         scorer: MUnitQuestScoring = MUnitQuestScoring(prediction=prediction, cfg=cfg)
         scorer.validate()
-        scorer.get_score()
+        scorer.get_score(mode=self.mode, t_start=t_start, t_end=t_end)
         
         return scorer.metrics, scorer.errors, scorer.unit_metrics
     
     @staticmethod
     @timer("Spike-train scoring took")
-    def _score_spike_trains(prediction: str, ground_truth: str) -> tuple[dict, list, pd.DataFrame]:
+    def _score_spike_trains(
+            prediction: str,
+            ground_truth: str,
+            t_start: float,
+            t_end: float
+        ) -> tuple[dict, list, pd.DataFrame]:
         """
         We absolutely know all the spike trains and MUs (synthetic data).
         Hence, we can directly evaluate the event-files.
@@ -204,6 +233,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         Args:
             prediction (str): filepath of predicted events.tsv
             ground_truth (str): filepath of the ground truth events.tsv
+            t_start (float): start of scoring window
+            t_end (float): end of scoring window
 
         Returns:
             tuple[dict, list, pd.DataFrame]: metrics of the scorer, list of validation errors,
@@ -218,7 +249,10 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
                 "mode": "first"
             },
             {
-                "step": "validate_prediction"
+                "step": "validate_prediction",
+                "t_start": t_start,
+                "t_end": t_end,
+                "threshold": 0.5
             },
             {
                 "step": "get_discharge_metric",
@@ -246,6 +280,8 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         label_files: list[str] = sorted([f for f in os.listdir(self.ground_truth_path) if f.endswith("_events.tsv")])
         self.n_labelfiles = len(label_files)
 
+        ground_truth_label: str = kwargs.get("ground_truth_label", "groundtruthspikes")
+
         for label_file in label_files:
             # get ground-truth path
             ground_truth: str = os.path.join(self.ground_truth_path, label_file)
@@ -254,11 +290,22 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             recording: str = os.path.join(
                 self.recording_path,
                 f"{recording_id}_challenge-{self.mode}",
-                f"{label_file.replace("desc-groundtruthspikes_events.tsv", "emg.edf")}"
+                f"{label_file.replace(f"desc-{ground_truth_label}_events.tsv", "emg.edf")}"
             )
 
+            # get scoring times as processing parameter
+            events_file: str = recording.replace("_emg.edf", "_events.tsv")
+            events_df: pd.DataFrame = pd.read_table(events_file)
+            t_start: float = events_df["onset"].loc[events_df["event_type"] == "scoring_start"].values[0]
+            t_end: float = events_df["onset"].loc[events_df["event_type"] == "scoring_end"].values[0]
+
+            sidecar_file: str = recording.replace(".edf", ".json")
+            with open(sidecar_file, "r") as f:
+                sidecar: dict = json.load(f)
+            fsamp: float = sidecar["SamplingFrequency"]
+
             # get prediction
-            prediction: str = os.path.join(self.prediction_path, label_file.replace("groundtruthspikes", "decomposed"))
+            prediction: str = os.path.join(self.prediction_path, label_file.replace(ground_truth_label, "decomposed"))
             
             # check if there exists an according prediction
             if not os.path.exists(prediction):
@@ -287,25 +334,32 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
             print(f"Scoring detected Motor Units\nPrediction: {prediction}\nRecording: {recording}\nLabelfile: {ground_truth}")
 
             # check if signal-based recording required
-            full_labels: bool = self._bookkeep(recording.split("/")[-1])
+            full_labels: bool = self._bookkeep(
+                recording=recording.split("/")[-1] if self.mode == "dynamic" else f"{recording_id}_challenge-{self.mode}"
+            )
 
             if not full_labels:
                 # get preprocessed recording
                 preprocessed_recording: str = os.path.join(
                     self.recording_path,
                     "preprocessed",
-                    f"{recording_id}_challenge-{self.mode}_desc-preProcessed_emg.edf"
+                    f"{recording_id}_challenge-{self.mode}_desc-preprocessed_emg.edf"
                 )
 
                 metrics, errors, unit_metrics = self._score_signal_based(
                     prediction=prediction,
                     ground_truth=ground_truth,
-                    recording=preprocessed_recording
+                    recording=preprocessed_recording,
+                    t_start=t_start,
+                    t_end=t_end,
+                    fsamp=fsamp
                 )
             else:
                 metrics, errors, unit_metrics = self._score_spike_trains(
                     prediction=prediction,
-                    ground_truth=ground_truth
+                    ground_truth=ground_truth,
+                    t_start=t_start,
+                    t_end=t_end
                 )
             
             self.results[prediction] = metrics
