@@ -9,14 +9,14 @@ tracked and aggregated results to the leaderboard and a html-report.
 import os
 import json
 import time
-import numpy as np
 import pandas as pd
 
 from functools import wraps
 from typing import Any
 
-from algorithm_scoring.score_recording import MUnitQuestScoring, ScoringConfig, ValidationItem
-from algorithm_scoring.report import AlgorithmSubmissionReport
+from .score_recording import MUnitQuestScoring, ScoringConfig
+from .validate import ValidationItem
+from .report import AlgorithmSubmissionReport
 
 
 def timer(description: str):
@@ -62,7 +62,7 @@ class MUnitQuestAlgorithmChallengeOrchestrator:
         self.reporter: AlgorithmSubmissionReport | None = None
 
         if self.mode == "dynamic":
-            self.book: pd.DataFrame = pd.read_csv("bookkeeping.csv")
+            self.book: pd.DataFrame = pd.read_csv(os.path.join(data_path, "bookkeeping.csv"))
         elif self.mode == "isometric":
             self.book: pd.DataFrame = pd.read_csv(os.path.join(self.ground_truth_path, "key.tsv"), delimiter="\t")
 
